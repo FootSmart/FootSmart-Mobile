@@ -15,13 +15,9 @@ class BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 80,
+      height: 70,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2332),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+        color: const Color(0xFF1E2A3A),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -30,61 +26,44 @@ class BottomNavBar extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          onTap: onTap,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFF1A2332),
-          selectedItemColor: AppColors.accentGreen,
-          unselectedItemColor: AppColors.textGreyDark,
-          selectedLabelStyle: AppTextStyles.caption.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
-          ),
-          unselectedLabelStyle: AppTextStyles.caption.copyWith(
-            fontSize: 11,
-          ),
-          elevation: 0,
-          items: [
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                icon: Icons.home_rounded,
-                isSelected: currentIndex == 0,
-              ),
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavItem(
+              icon: Icons.home_outlined,
+              selectedIcon: Icons.home,
               label: 'Home',
+              isSelected: currentIndex == 0,
+              onTap: () => onTap(0),
             ),
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                icon: Icons.bar_chart_rounded,
-                isSelected: currentIndex == 1,
-              ),
-              label: 'Analytics',
+            _NavItem(
+              icon: Icons.explore_outlined,
+              selectedIcon: Icons.explore,
+              label: 'Explore',
+              isSelected: currentIndex == 1,
+              onTap: () => onTap(1),
             ),
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                icon: Icons.sports_soccer_rounded,
-                isSelected: currentIndex == 2,
-              ),
+            _NavItem(
+              icon: Icons.sports_soccer_outlined,
+              selectedIcon: Icons.sports_soccer,
               label: 'Bet',
+              isSelected: currentIndex == 2,
+              onTap: () => onTap(2),
             ),
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                icon: Icons.account_balance_wallet_rounded,
-                isSelected: currentIndex == 3,
-              ),
+            _NavItem(
+              icon: Icons.account_balance_wallet_outlined,
+              selectedIcon: Icons.account_balance_wallet,
               label: 'Wallet',
+              isSelected: currentIndex == 3,
+              onTap: () => onTap(3),
             ),
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                icon: Icons.person_rounded,
-                isSelected: currentIndex == 4,
-              ),
+            _NavItem(
+              icon: Icons.person_outline,
+              selectedIcon: Icons.person,
               label: 'Profile',
+              isSelected: currentIndex == 4,
+              onTap: () => onTap(4),
             ),
           ],
         ),
@@ -93,24 +72,50 @@ class BottomNavBar extends StatelessWidget {
   }
 }
 
-class _NavIcon extends StatelessWidget {
+class _NavItem extends StatelessWidget {
   final IconData icon;
+  final IconData selectedIcon;
+  final String label;
   final bool isSelected;
+  final VoidCallback onTap;
 
-  const _NavIcon({
+  const _NavItem({
     required this.icon,
+    required this.selectedIcon,
+    required this.label,
     required this.isSelected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      child: Icon(
-        icon,
-        size: 24,
-        color: isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
-      ),
-    );
-  }
+    return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isSelected ? selectedIcon : icon,
+                  size: 24,
+                  color:
+                  isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color:
+                    isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+    }
 }
