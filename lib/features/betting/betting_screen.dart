@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:footsmart_pro/core/routes/bottom_nav_handler.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
 class BettingScreen extends StatefulWidget {
@@ -92,11 +93,7 @@ class _BettingScreenState extends State<BettingScreen> {
       bottomNavigationBar: BottomNavBar(
         currentIndex: 2,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacementNamed(context, AppRoutes.home);
-          } else if (index == 1) {
-            Navigator.pushReplacementNamed(context, AppRoutes.explore);
-          }
+          handleBottomNavTap(context, currentIndex: 2, index: index);
         },
       ),
     );

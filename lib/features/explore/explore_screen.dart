@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:footsmart_pro/core/routes/bottom_nav_handler.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
 class ExploreScreen extends StatelessWidget {
@@ -145,11 +146,7 @@ class ExploreScreen extends StatelessWidget {
       bottomNavigationBar: BottomNavBar(
         currentIndex: 1,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacementNamed(context, AppRoutes.home);
-          } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, AppRoutes.betting);
-          }
+          handleBottomNavTap(context, currentIndex: 1, index: index);
         },
       ),
     );

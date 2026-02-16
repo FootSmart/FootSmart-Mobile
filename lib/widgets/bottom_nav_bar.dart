@@ -20,7 +20,7 @@ class BottomNavBar extends StatelessWidget {
         color: const Color(0xFF1E2A3A),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -90,35 +90,6 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isSelected ? selectedIcon : icon,
-                  size: 24,
-                  color:
-                  isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: AppTextStyles.caption.copyWith(
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color:
-                    isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-    }
-}
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(

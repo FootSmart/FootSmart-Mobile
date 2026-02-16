@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/routes/app_routes.dart';
+import '../../core/routes/bottom_nav_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
-import '../../core/routes/app_routes.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -112,7 +112,7 @@ class HomeScreen extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.warning.withOpacity(0.15),
+                              color: AppColors.warning.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -339,25 +339,7 @@ class HomeScreen extends StatelessWidget {
       bottomNavigationBar: BottomNavBar(
         currentIndex: 0,
         onTap: (index) {
-          if (index == 4) {
-            Navigator.pushNamed(context, AppRoutes.profile);
-            return;
-          }
-
-          if (index == 3) {
-            Navigator.pushNamed(context, AppRoutes.wallet);
-            return;
-          }
-
-          if (index != 0) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('This section is coming soon.')),
-            );
-          if (index == 1) {
-            Navigator.pushReplacementNamed(context, AppRoutes.explore);
-          } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, AppRoutes.betting);
-          }
+          handleBottomNavTap(context, currentIndex: 0, index: index);
         },
       ),
     );
@@ -413,7 +395,7 @@ class _MatchCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: riskColor.withOpacity(0.15),
+                  color: riskColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(

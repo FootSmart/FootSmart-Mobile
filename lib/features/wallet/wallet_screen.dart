@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:footsmart_pro/core/routes/bottom_nav_handler.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -120,19 +121,7 @@ class _WalletScreenState extends State<WalletScreen> {
       bottomNavigationBar: BottomNavBar(
         currentIndex: 3,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.pushNamed(context, AppRoutes.home);
-            return;
-          }
-          if (index == 4) {
-            Navigator.pushNamed(context, AppRoutes.profile);
-            return;
-          }
-          if (index != 3) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('This section is coming soon.')),
-            );
-          }
+          handleBottomNavTap(context, currentIndex: 3, index: index);
         },
       ),
     );

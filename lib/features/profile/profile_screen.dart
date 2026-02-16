@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:footsmart_pro/core/routes/bottom_nav_handler.dart';
 import '../../widgets/bottom_nav_bar.dart';
-
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -31,7 +31,7 @@ class ProfileScreen extends StatelessWidget {
         _ProfileMenuItem(
           icon: Icons.credit_card_outlined,
           label: 'Payment Methods',
-          route: '/app/wallet',
+          route: AppRoutes.wallet,
         ),
       ],
     ),
@@ -134,7 +134,7 @@ class ProfileScreen extends StatelessWidget {
                       onPressed: () => Navigator.pushNamedAndRemoveUntil(
                         context,
                         AppRoutes.signIn,
-                            (route) => false,
+                        (route) => false,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -156,21 +156,7 @@ class ProfileScreen extends StatelessWidget {
       bottomNavigationBar: BottomNavBar(
         currentIndex: 4, // profile tab index
         onTap: (index) {
-          if (index == 0) {
-            Navigator.pushNamed(context, AppRoutes.home);
-            return;
-          }
-
-          if (index == 3) {
-            Navigator.pushNamed(context, AppRoutes.wallet);
-            return;
-          }
-
-          if (index != 4) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('This section is coming soon.')),
-            );
-          }
+          handleBottomNavTap(context, currentIndex: 4, index: index);
         },
       ),
     );
@@ -178,12 +164,6 @@ class ProfileScreen extends StatelessWidget {
 
   void _onMenuTap(BuildContext context, _ProfileMenuItem item) {
     final navigator = Navigator.of(context);
-    if (item.route == '/app/wallet') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Wallet screen is coming next.')),
-      );
-      return;
-    }
 
     final availableRoutes = AppRoutes.routes;
     if (availableRoutes.containsKey(item.route)) {
@@ -297,27 +277,27 @@ class _StatsGrid extends StatelessWidget {
       children: ProfileScreen._stats
           .map(
             (stat) => Expanded(
-          child: Column(
-            children: [
-              Text(
-                stat.value,
-                style: AppTextStyles.h3.copyWith(
-                  color: AppColors.accentGreen,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                children: [
+                  Text(
+                    stat.value,
+                    style: AppTextStyles.h3.copyWith(
+                      color: AppColors.accentGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    stat.label,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.caption.copyWith(
+                      color: const Color(0xFFA0A4B8),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                stat.label,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.caption.copyWith(
-                  color: const Color(0xFFA0A4B8),
-                ),
-              ),
-            ],
-          ),
-        ),
-      )
+            ),
+          )
           .toList(),
     );
   }
@@ -433,8 +413,8 @@ class _ProfileMenuTile extends StatelessWidget {
           border: isLast
               ? null
               : const Border(
-            bottom: BorderSide(color: Color(0xFF252B3D)),
-          ),
+                  bottom: BorderSide(color: Color(0xFF252B3D)),
+                ),
         ),
         child: Row(
           children: [

@@ -17,20 +17,10 @@ class AppRoutes {
   static const String signIn = '/sign-in';
   static const String signUp = '/sign-up';
   static const String home = '/home';
-  static const String profile = '/profile';
-  static const String wallet = '/wallet';
-
-  static Map<String, WidgetBuilder> get routes => {
-    splash: (context) => const SplashScreen(),
-    onboarding: (context) => const OnboardingScreen(),
-    signIn: (context) => const SignInScreen(),
-    signUp: (context) => const SignUpScreen(),
-    home: (context) => const HomeScreen(),
-    profile: (context) => const ProfileScreen(),
-    wallet: (context) => const WalletScreen(),
-  };
   static const String explore = '/explore';
   static const String betting = '/betting';
+  static const String profile = '/profile';
+  static const String wallet = '/wallet';
 
   static Map<String, WidgetBuilder> get routes => {
         splash: (context) => const SplashScreen(),
@@ -40,5 +30,7 @@ class AppRoutes {
         home: (context) => const HomeScreen(),
         explore: (context) => const ExploreScreen(),
         betting: (context) => const BettingScreen(),
+        profile: (context) => const ProfileScreen(),
+        wallet: (context) => const WalletScreen(),
       };
 }
