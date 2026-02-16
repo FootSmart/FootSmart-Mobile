@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/routes/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../widgets/bottom_nav_bar.dart';
@@ -337,7 +338,13 @@ class HomeScreen extends StatelessWidget {
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: 0,
-        onTap: (_) {},
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.pushReplacementNamed(context, AppRoutes.explore);
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, AppRoutes.betting);
+          }
+        },
       ),
     );
   }
