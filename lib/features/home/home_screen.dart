@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/routes/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/routes/app_routes.dart';
@@ -352,6 +353,10 @@ class HomeScreen extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('This section is coming soon.')),
             );
+          if (index == 1) {
+            Navigator.pushReplacementNamed(context, AppRoutes.explore);
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, AppRoutes.betting);
           }
         },
       ),
