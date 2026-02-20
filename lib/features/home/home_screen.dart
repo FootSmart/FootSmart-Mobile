@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/routes/app_routes.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -330,7 +331,6 @@ class HomeScreen extends StatelessWidget {
                   accuracy: '89%',
                 ),
 
-                const SizedBox(height: 100), // Bottom nav spacing
               ],
             ),
           ),
@@ -339,6 +339,20 @@ class HomeScreen extends StatelessWidget {
       bottomNavigationBar: BottomNavBar(
         currentIndex: 0,
         onTap: (index) {
+          if (index == 4) {
+            Navigator.pushNamed(context, AppRoutes.profile);
+            return;
+          }
+
+          if (index == 3) {
+            Navigator.pushNamed(context, AppRoutes.wallet);
+            return;
+          }
+
+          if (index != 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('This section is coming soon.')),
+            );
           if (index == 1) {
             Navigator.pushReplacementNamed(context, AppRoutes.explore);
           } else if (index == 2) {

@@ -90,6 +90,35 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isSelected ? selectedIcon : icon,
+                  size: 24,
+                  color:
+                  isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color:
+                    isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+    }
+}
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
