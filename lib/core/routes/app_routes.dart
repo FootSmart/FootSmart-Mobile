@@ -3,6 +3,7 @@ import 'package:footsmart_pro/features/auth/screens/sign_in_screen.dart';
 import 'package:footsmart_pro/features/auth/screens/sign_up_screen.dart';
 import 'package:footsmart_pro/features/betting/betting_screen.dart';
 import 'package:footsmart_pro/features/explore/explore_screen.dart';
+import 'package:footsmart_pro/features/explore/competition_hub_screen.dart';
 import 'package:footsmart_pro/features/home/home_screen.dart';
 import 'package:footsmart_pro/features/onboarding/onboarding_screen.dart';
 import 'package:footsmart_pro/features/splash/splash_screen.dart';
@@ -16,6 +17,7 @@ class AppRoutes {
   static const String signUp = '/sign-up';
   static const String home = '/home';
   static const String explore = '/explore';
+  static const String competitionHub = '/competition-hub';
   static const String betting = '/betting';
 
   static Map<String, WidgetBuilder> get routes => {
@@ -25,6 +27,7 @@ class AppRoutes {
         signUp: (context) => const SignUpScreen(),
         home: (context) => const HomeScreen(),
         explore: (context) => const ExploreScreen(),
+        competitionHub: (context) => const CompetitionHubScreen(),
         betting: (context) => const BettingScreen(),
       };
 }

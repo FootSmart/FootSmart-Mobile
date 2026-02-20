@@ -66,7 +66,7 @@ class ExploreScreen extends StatelessWidget {
                     title: 'Competition Hub',
                     subtitle: 'Live standings, fixtures &\nleague analytics',
                     onTap: () {
-                      // Navigate to Competition Hub
+                      Navigator.pushNamed(context, AppRoutes.competitionHub);
                     },
                   ),
                   const SizedBox(height: 16),
