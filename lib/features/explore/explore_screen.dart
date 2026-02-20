@@ -72,6 +72,17 @@ class ExploreScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   _buildMenuItem(
                     context,
+                    icon: Icons.people_alt_rounded,
+                    iconColor: const Color(0xFF6C63FF),
+                    title: 'Players Hub',
+                    subtitle: 'Player stats, rankings &\ngoal / assist charts',
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRoutes.playersHub);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuItem(
+                    context,
                     icon: Icons.timeline,
                     iconColor: const Color(0xFF00D9A3),
                     title: 'Advanced Match Insights',

@@ -13,52 +13,64 @@ class ApiConstants {
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
 
-  // Endpoints
+  // ─── Endpoints ───────────────────────────────────────────────────────────
 
-  // Auth endpoints
+  // Auth
   static const String authLogin = '/auth/login';
   static const String authRegister = '/auth/register';
   static const String authRefresh = '/auth/refresh';
   static const String authLogout = '/auth/logout';
+  static const String profile = '/auth/profile';
+  static const String updateProfile = '/auth/profile/update';
 
-  // League endpoints
+  // ─── Leagues ─────────────────────────────────────────────────────────────
   static const String leagues = '/leagues';
-  static String leagueStandings(String leagueId) =>
-      '/leagues/$leagueId/standings';
+  static String leagueById(String id) => '/leagues/$id';
+  static String leagueStandings(String id) => '/leagues/$id/standings';
+  static String leagueMatches(String id) => '/leagues/$id/matches';
+  static const String leagueStatsOverview = '/leagues/stats/overview';
 
-  // Match endpoints
+  // ─── Teams ───────────────────────────────────────────────────────────────
+  static const String teams = '/teams';
+  static String teamDetails(String id) => '/teams/$id';
+  static String teamFull(String id) => '/teams/$id/full';
+  static String teamPlayers(String id) => '/teams/$id/players';
+  static String teamStats(String id) => '/teams/$id/stats';
+  static String leagueTopScorers(String leagueId) =>
+      '/teams/league/$leagueId/top-scorers';
+
+  // ─── Matches ─────────────────────────────────────────────────────────────
   static const String matches = '/matches';
-  static String matchDetails(String matchId) => '/matches/$matchId';
   static const String upcomingMatches = '/matches/upcoming';
   static const String liveMatches = '/matches/live';
+  static String matchDetails(String id) => '/matches/$id';
+  static String teamMatches(String teamId) => '/matches/team/$teamId';
+  static String teamForm(String teamId) => '/matches/team/$teamId/form';
+  static String teamFixtures(String teamId) => '/matches/team/$teamId/fixtures';
 
-  // Prediction endpoints
+  // ─── Predictions ─────────────────────────────────────────────────────────
   static const String predictions = '/predictions';
   static String matchPredictions(String matchId) =>
       '/predictions/match/$matchId';
 
-  // Betting endpoints
+  // ─── Bets ────────────────────────────────────────────────────────────────
   static const String bets = '/bets';
   static const String myBets = '/bets/my';
   static String betDetails(String betId) => '/bets/$betId';
 
-  // Wallet endpoints
+  // ─── Wallet ──────────────────────────────────────────────────────────────
   static const String wallet = '/wallet';
   static const String walletBalance = '/wallet/balance';
   static const String walletDeposit = '/wallet/deposit';
   static const String walletWithdraw = '/wallet/withdraw';
   static const String walletTransactions = '/wallet/transactions';
 
-  // Analytics endpoints
+  // ─── Analytics ───────────────────────────────────────────────────────────
   static const String analytics = '/analytics';
   static const String userStats = '/analytics/user/stats';
   static String teamAnalytics(String teamId) => '/analytics/team/$teamId';
 
-  // User profile endpoints
-  static const String profile = '/auth/profile';
-  static const String updateProfile = '/auth/profile/update';
-
-  // Headers
+  // ─── Headers ─────────────────────────────────────────────────────────────
   static Map<String, String> get defaultHeaders => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

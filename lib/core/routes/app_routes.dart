@@ -4,6 +4,7 @@ import 'package:footsmart_pro/features/auth/screens/sign_up_screen.dart';
 import 'package:footsmart_pro/features/betting/betting_screen.dart';
 import 'package:footsmart_pro/features/explore/explore_screen.dart';
 import 'package:footsmart_pro/features/explore/competition_hub_screen.dart';
+import 'package:footsmart_pro/features/explore/players_hub_screen.dart';
 import 'package:footsmart_pro/features/home/home_screen.dart';
 import 'package:footsmart_pro/features/onboarding/onboarding_screen.dart';
 import 'package:footsmart_pro/features/profile/profile_screen.dart';
@@ -20,6 +21,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String explore = '/explore';
   static const String competitionHub = '/competition-hub';
+  static const String playersHub = '/players-hub';
   static const String betting = '/betting';
   static const String wallet = '/app/wallet';
   static const String profile = '/app/profile';
@@ -32,6 +34,7 @@ class AppRoutes {
         home: (context) => const HomeScreen(),
         explore: (context) => const ExploreScreen(),
         competitionHub: (context) => const CompetitionHubScreen(),
+        playersHub: (context) => const PlayersHubScreen(),
         betting: (context) => const BettingScreen(),
         wallet: (context) => const WalletScreen(),
         profile: (context) => const ProfileScreen(),

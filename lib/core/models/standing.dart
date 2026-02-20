@@ -8,6 +8,10 @@ class Standing {
   final int losses;
   final int points;
   final int goalDiff;
+  final int? goalsFor;
+  final int? goalsAgainst;
+  final String? form;
+  final int? matchday;
   final int season;
   final String teamId;
   final String teamName;
@@ -23,6 +27,10 @@ class Standing {
     required this.losses,
     required this.points,
     required this.goalDiff,
+    this.goalsFor,
+    this.goalsAgainst,
+    this.form,
+    this.matchday,
     required this.season,
     required this.teamId,
     required this.teamName,
@@ -41,6 +49,10 @@ class Standing {
       losses: json['losses'] as int,
       points: json['points'] as int,
       goalDiff: json['goalDiff'] as int,
+      goalsFor: json['goalsFor'] as int?,
+      goalsAgainst: json['goalsAgainst'] as int?,
+      form: json['form'] as String?,
+      matchday: json['matchday'] as int?,
       season: json['season'] as int,
       teamId: json['teamId'] as String,
       teamName: json['teamName'] as String,
@@ -60,6 +72,10 @@ class Standing {
       'losses': losses,
       'points': points,
       'goalDiff': goalDiff,
+      'goalsFor': goalsFor,
+      'goalsAgainst': goalsAgainst,
+      'form': form,
+      'matchday': matchday,
       'season': season,
       'teamId': teamId,
       'teamName': teamName,
@@ -67,6 +83,10 @@ class Standing {
       'teamCountry': teamCountry,
     };
   }
+
+  /// Recent form as a list of characters e.g. ['W','W','D','L','W']
+  List<String> get formList =>
+      form?.split('').where((c) => c.isNotEmpty).toList() ?? [];
 
   @override
   String toString() {

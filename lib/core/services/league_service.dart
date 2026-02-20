@@ -1,5 +1,6 @@
 import '../models/league.dart';
 import '../models/standing.dart';
+import '../models/match.dart';
 import '../constants/api_constants.dart';
 import 'api_service.dart';
 
@@ -57,30 +58,45 @@ class LeagueService {
     }
   }
 
-  /// Get league by ID
-  ///
-  /// [leagueId] - The UUID of the league
-  /// This would require a backend endpoint like GET /leagues/:id
-  /// Currently not implemented in backend, but included for completeness
-  Future<League?> getLeagueById(String leagueId) async {
+  /// Get league by ID – uses the dedicated GET /leagues/:id endpoint
+  Future<League> getLeagueById(String leagueId) async {
     try {
-      final leagues = await getAllLeagues();
-      return leagues.firstWhere(
-        (league) => league.id == leagueId,
-        orElse: () => throw ApiException('League not found'),
-      );
-    } catch (e) {
-      if (e is ApiException) {
-        rethrow;
+      final response = await _apiService.get(ApiConstants.leagueById(leagueId));
+      if (response.statusCode == 200) {
+        return League.fromJson(response.data as Map<String, dynamic>);
+      } else {
+        throw ApiException('Failed to fetch league');
       }
+    } catch (e) {
+      if (e is ApiException) rethrow;
       throw ApiException('Failed to fetch league: ${e.toString()}');
     }
   }
 
-  /// Search leagues by name or country
-  ///
-  /// This performs client-side filtering. For better performance,
-  /// consider implementing server-side search in the backend
+  /// Get matches for a league (paginated)
+  Future<MatchListResponse> getLeagueMatches(
+    String leagueId, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.leagueMatches(leagueId),
+        queryParameters: {'limit': limit, 'offset': offset},
+      );
+      if (response.statusCode == 200) {
+        return MatchListResponse.fromJson(
+            response.data as Map<String, dynamic>);
+      } else {
+        throw ApiException('Failed to fetch league matches');
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to fetch league matches: ${e.toString()}');
+    }
+  }
+
+  /// Search leagues by name or country (client-side filter)
   Future<List<League>> searchLeagues(String query) async {
     try {
       final leagues = await getAllLeagues();
