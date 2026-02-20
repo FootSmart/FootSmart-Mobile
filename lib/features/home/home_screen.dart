@@ -340,9 +340,13 @@ class HomeScreen extends StatelessWidget {
         currentIndex: 0,
         onTap: (index) {
           if (index == 1) {
-            Navigator.pushReplacementNamed(context, AppRoutes.explore);
+            Navigator.pushNamed(context, AppRoutes.explore);
           } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, AppRoutes.betting);
+            Navigator.pushNamed(context, AppRoutes.betting);
+          } else if (index == 3) {
+            Navigator.pushNamed(context, AppRoutes.wallet);
+          } else if (index == 4) {
+            Navigator.pushNamed(context, AppRoutes.profile);
           }
         },
       ),
