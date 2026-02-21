@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:provider/provider.dart';
+import '../../core/services/theme_service.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -113,6 +115,19 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Theme Toggle
+                    Text(
+                      'APPEARANCE',
+                      style: AppTextStyles.overline.copyWith(
+                        color: const Color(0xFFA0A4B8),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const _ThemeToggleCard(),
+                    const SizedBox(height: 24),
+
                     for (final section in _menuSections) ...[
                       Text(
                         section.title.toUpperCase(),
@@ -570,4 +585,80 @@ class _ProfileStat {
 
   final String label;
   final String value;
+}
+
+class _ThemeToggleCard extends StatelessWidget {
+  const _ThemeToggleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final themeService = Provider.of<ThemeService>(context);
+    final isDarkMode = themeService.isDarkMode;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F2E),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF252B3D)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => themeService.toggleTheme(),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGreen.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                    color: AppColors.accentGreen,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Dark Mode',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textWhite,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        isDarkMode ? 'On' : 'Off',
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFFA0A4B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: isDarkMode,
+                  onChanged: (_) => themeService.toggleTheme(),
+                  activeThumbColor: AppColors.accentGreen,
+                  activeTrackColor:
+                      AppColors.accentGreen.withValues(alpha: 0.3),
+                  inactiveThumbColor: const Color(0xFF6B7280),
+                  inactiveTrackColor: const Color(0xFF374151),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

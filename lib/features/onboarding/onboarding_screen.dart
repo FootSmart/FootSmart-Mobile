@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_strings.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
+import 'package:footsmart_pro/core/extensions/theme_context.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -41,18 +42,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _setSystemUIOverlay();
   }
 
   void _setSystemUIOverlay() {
+    final brightness = context.isDark ? Brightness.light : Brightness.dark;
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
+      SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: AppColors.primaryDark,
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: brightness,
+        systemNavigationBarColor: context.scaffoldBg,
+        systemNavigationBarIconBrightness: brightness,
       ),
     );
   }
@@ -87,10 +89,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryDark,
+      backgroundColor: context.scaffoldBg,
       body: Container(
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
+          gradient: context.bgGradient,
         ),
         child: SafeArea(
           child: Column(
@@ -105,7 +107,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Text(
                       AppStrings.skip,
                       style: AppTextStyles.buttonMedium.copyWith(
-                        color: AppColors.textGrey,
+                        color: context.textSecondary,
                       ),
                     ),
                   ),
@@ -145,8 +147,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: ElevatedButton(
                     onPressed: _nextPage,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentGreen,
-                      foregroundColor: AppColors.primaryDark,
+                      backgroundColor: context.accent,
+                      foregroundColor:
+                          context.isDark ? AppColors.primaryDark : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -155,7 +158,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Text(
                       _pages[_currentPage].buttonText,
                       style: AppTextStyles.buttonLarge.copyWith(
-                        color: AppColors.primaryDark,
+                        color: context.isDark
+                            ? AppColors.primaryDark
+                            : Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -184,7 +189,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             width: 140,
             height: 140,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2332), // Darker circle
+              color: context.surfaceBg,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -192,7 +197,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: page.iconColor.withOpacity(0.15),
+                  color: page.iconColor.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -212,6 +217,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Text(
             page.title,
             style: AppTextStyles.h1.copyWith(
+              color: context.textPrimary,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
@@ -224,7 +230,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Text(
             page.description,
             style: AppTextStyles.bodyLarge.copyWith(
-              color: AppColors.textGrey,
+              color: context.textSecondary,
               height: 1.5,
             ),
             textAlign: TextAlign.center,
@@ -243,7 +249,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       height: 8,
       width: isActive ? 32 : 8,
       decoration: BoxDecoration(
-        color: isActive ? AppColors.accentGreen : AppColors.textGreyDark,
+        color: isActive ? context.accent : context.iconInactive,
         borderRadius: BorderRadius.circular(4),
       ),
     );

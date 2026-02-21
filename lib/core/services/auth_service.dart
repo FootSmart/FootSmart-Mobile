@@ -34,6 +34,47 @@ class AuthService {
     return authResponse;
   }
 
+  /// Request password reset email
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final response = await _apiService.post(
+      ApiConstants.forgotPassword,
+      data: {'email': email},
+    );
+
+    return {
+      'success': true,
+      'message':
+          response.data['message'] ?? 'Password reset email sent successfully',
+    };
+  }
+
+  /// Reset password with token
+  Future<Map<String, dynamic>> resetPassword(
+      String token, String newPassword) async {
+    final response = await _apiService.post(
+      ApiConstants.resetPassword,
+      data: {
+        'token': token,
+        'newPassword': newPassword,
+      },
+    );
+
+    return {
+      'success': true,
+      'message': response.data['message'] ?? 'Password reset successfully',
+    };
+  }
+
+  /// Verify reset token validity
+  Future<Map<String, dynamic>> verifyResetToken(String token) async {
+    final response = await _apiService.post(
+      ApiConstants.verifyResetToken,
+      data: {'token': token},
+    );
+
+    return response.data;
+  }
+
   /// Save authentication data to local storage
   Future<void> _saveAuthData(AuthResponse authResponse) async {
     final prefs = await SharedPreferences.getInstance();

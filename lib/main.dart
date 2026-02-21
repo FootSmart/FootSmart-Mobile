@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
+import 'core/constants/app_theme.dart';
 import 'core/routes/app_routes.dart';
+import 'core/services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,17 +15,12 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: AppColors.primaryDark,
-      systemNavigationBarIconBrightness: Brightness.light,
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeService(),
+      child: const FootSmartProApp(),
     ),
   );
-
-  runApp(const FootSmartProApp());
 }
 
 class FootSmartProApp extends StatelessWidget {
@@ -30,28 +28,32 @@ class FootSmartProApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FootSmart Pro',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        primaryColor: AppColors.primaryDark,
-        scaffoldBackgroundColor: AppColors.backgroundDark,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.accentGreen,
-          secondary: AppColors.accentOrange,
-          surface: AppColors.cardBackground,
-          error: AppColors.error,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
-        ),
-      ),
-      initialRoute: AppRoutes.splash,
-      routes: AppRoutes.routes,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        // Update system UI overlay based on theme
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness:
+                themeService.isDarkMode ? Brightness.light : Brightness.dark,
+            systemNavigationBarColor: themeService.isDarkMode
+                ? AppColors.primaryDark
+                : AppColors.backgroundLight,
+            systemNavigationBarIconBrightness:
+                themeService.isDarkMode ? Brightness.light : Brightness.dark,
+          ),
+        );
+
+        return MaterialApp(
+          title: 'FootSmart Pro',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeService.themeMode,
+          initialRoute: AppRoutes.splash,
+          routes: AppRoutes.routes,
+        );
+      },
     );
   }
 }

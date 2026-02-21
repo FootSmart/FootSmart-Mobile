@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import '../core/constants/app_text_styles.dart';
+import '../core/extensions/theme_context.dart';
 
 enum ButtonVariant { primary, secondary, outlined, text }
 
@@ -43,7 +44,7 @@ class CustomButton extends StatelessWidget {
                 Icon(icon, size: 20),
                 const SizedBox(width: 8),
               ],
-              Text(text, style: _getTextStyle()),
+              Text(text, style: _getTextStyle(context)),
             ],
           );
 
@@ -52,7 +53,7 @@ class CustomButton extends StatelessWidget {
       height: height,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
-        style: _getButtonStyle(),
+        style: _getButtonStyle(context),
         child: child,
       ),
     );
@@ -60,13 +61,14 @@ class CustomButton extends StatelessWidget {
     return button;
   }
 
-  ButtonStyle _getButtonStyle() {
+  ButtonStyle _getButtonStyle(BuildContext context) {
     switch (variant) {
       case ButtonVariant.primary:
         return ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accentGreen,
-          foregroundColor: AppColors.primaryDark,
-          disabledBackgroundColor: AppColors.accentGreen.withOpacity(0.5),
+          backgroundColor: context.accent,
+          foregroundColor:
+              context.isDark ? AppColors.primaryDark : Colors.white,
+          disabledBackgroundColor: context.accent.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -74,9 +76,9 @@ class CustomButton extends StatelessWidget {
         );
       case ButtonVariant.secondary:
         return ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accentOrange,
+          backgroundColor: context.accentOrange,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.accentOrange.withOpacity(0.5),
+          disabledBackgroundColor: context.accentOrange.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -85,8 +87,8 @@ class CustomButton extends StatelessWidget {
       case ButtonVariant.outlined:
         return ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
-          foregroundColor: AppColors.accentGreen,
-          side: const BorderSide(color: AppColors.accentGreen, width: 2),
+          foregroundColor: context.accent,
+          side: BorderSide(color: context.accent, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -95,22 +97,24 @@ class CustomButton extends StatelessWidget {
       case ButtonVariant.text:
         return ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
-          foregroundColor: AppColors.accentGreen,
+          foregroundColor: context.accent,
           elevation: 0,
         );
     }
   }
 
-  TextStyle _getTextStyle() {
+  TextStyle _getTextStyle(BuildContext context) {
     final baseStyle = AppTextStyles.buttonLarge;
     switch (variant) {
       case ButtonVariant.primary:
-        return baseStyle.copyWith(color: AppColors.primaryDark);
+        return baseStyle.copyWith(
+          color: context.isDark ? AppColors.primaryDark : Colors.white,
+        );
       case ButtonVariant.secondary:
         return baseStyle.copyWith(color: Colors.white);
       case ButtonVariant.outlined:
       case ButtonVariant.text:
-        return baseStyle.copyWith(color: AppColors.accentGreen);
+        return baseStyle.copyWith(color: context.accent);
     }
   }
 }

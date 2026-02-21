@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/extensions/theme_context.dart';
 import '../../../core/models/user.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
@@ -100,12 +101,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.accentGreen,
-              onPrimary: AppColors.primaryDark,
-              surface: AppColors.cardBackground,
-              onSurface: AppColors.textWhite,
-            ),
+            colorScheme: context.isDark
+                ? ColorScheme.dark(
+                    primary: context.accent,
+                    onPrimary: AppColors.primaryDark,
+                    surface: context.inputBg,
+                    onSurface: context.textPrimary,
+                  )
+                : ColorScheme.light(
+                    primary: context.accent,
+                    onPrimary: Colors.white,
+                    surface: context.inputBg,
+                    onSurface: context.textPrimary,
+                  ),
           ),
           child: child!,
         );
@@ -156,7 +164,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Welcome, ${authResponse.user.displayName}!'),
-            backgroundColor: AppColors.accentGreen,
+            backgroundColor: context.accent,
           ),
         );
 
@@ -201,7 +209,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryDark,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -219,7 +227,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGreen,
+                        color: context.accent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
@@ -234,6 +242,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       'Create Account',
                       style: AppTextStyles.h2.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
                       ),
                     ),
                   ],
@@ -244,7 +253,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Text(
                   'Join FootSmart Pro and start betting smarter',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textGrey,
+                    color: context.textSecondary,
                   ),
                 ),
 
@@ -258,41 +267,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Display Name',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _displayNameController,
                       keyboardType: TextInputType.name,
                       validator: _validateDisplayName,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'John Doe',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
+                        fillColor: context.inputBg,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 16,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -311,41 +326,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Email Address',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       validator: _validateEmail,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'your@email.com',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
+                        fillColor: context.inputBg,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 16,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -364,22 +385,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Password',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
                       validator: _validatePassword,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Create a strong password',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
-                        suffixIcon: const Icon(
+                        fillColor: context.inputBg,
+                        suffixIcon: Icon(
                           Icons.visibility_off_outlined,
-                          color: AppColors.textGreyDark,
+                          color: context.iconInactive,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -387,22 +414,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -421,22 +448,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Confirm Password',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: true,
                       validator: _validateConfirmPassword,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Re-enter your password',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
-                        suffixIcon: const Icon(
+                        fillColor: context.inputBg,
+                        suffixIcon: Icon(
                           Icons.visibility_off_outlined,
-                          color: AppColors.textGreyDark,
+                          color: context.iconInactive,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -444,22 +477,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -478,7 +511,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Date of Birth',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
@@ -486,15 +521,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       readOnly: true,
                       onTap: _selectDate,
                       validator: _validateDateOfBirth,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Select your date of birth',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
-                        suffixIcon: const Icon(
+                        fillColor: context.inputBg,
+                        suffixIcon: Icon(
                           Icons.calendar_today_outlined,
-                          color: AppColors.textGreyDark,
+                          color: context.iconInactive,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -502,22 +541,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -536,7 +575,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 12),
                       child: Text(
                         'I am a',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     Row(
@@ -555,12 +596,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: _selectedRole == 'player'
-                                    ? AppColors.accentGreen.withOpacity(0.15)
-                                    : AppColors.cardBackground,
+                                    ? context.accent.withValues(alpha: 0.15)
+                                    : context.inputBg,
                                 border: Border.all(
                                   color: _selectedRole == 'player'
-                                      ? AppColors.accentGreen
-                                      : AppColors.borderDark,
+                                      ? context.accent
+                                      : context.borderColor,
                                   width: _selectedRole == 'player' ? 2 : 1.5,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
@@ -570,8 +611,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   'Player',
                                   style: AppTextStyles.buttonMedium.copyWith(
                                     color: _selectedRole == 'player'
-                                        ? AppColors.accentGreen
-                                        : AppColors.textGrey,
+                                        ? context.accent
+                                        : context.textSecondary,
                                     fontWeight: _selectedRole == 'player'
                                         ? FontWeight.bold
                                         : FontWeight.normal,
@@ -596,12 +637,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: _selectedRole == 'coach'
-                                    ? AppColors.accentGreen.withOpacity(0.15)
-                                    : AppColors.cardBackground,
+                                    ? context.accent.withValues(alpha: 0.15)
+                                    : context.inputBg,
                                 border: Border.all(
                                   color: _selectedRole == 'coach'
-                                      ? AppColors.accentGreen
-                                      : AppColors.borderDark,
+                                      ? context.accent
+                                      : context.borderColor,
                                   width: _selectedRole == 'coach' ? 2 : 1.5,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
@@ -611,8 +652,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   'Coach',
                                   style: AppTextStyles.buttonMedium.copyWith(
                                     color: _selectedRole == 'coach'
-                                        ? AppColors.accentGreen
-                                        : AppColors.textGrey,
+                                        ? context.accent
+                                        : context.textSecondary,
                                     fontWeight: _selectedRole == 'coach'
                                         ? FontWeight.bold
                                         : FontWeight.normal,
@@ -650,7 +691,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           border: Border.all(
                             color: _isAgeConfirmed
                                 ? AppColors.accentGreen
-                                : AppColors.textGreyDark,
+                                : context.iconInactive,
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(4),
@@ -668,7 +709,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: Text(
                           'I confirm that I am 18 years or older and legally allowed to gamble in my jurisdiction',
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textGrey,
+                            color: context.textSecondary,
                             height: 1.4,
                           ),
                         ),
@@ -700,7 +741,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           border: Border.all(
                             color: _isTermsAccepted
                                 ? AppColors.accentGreen
-                                : AppColors.textGreyDark,
+                                : context.iconInactive,
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(4),
@@ -718,7 +759,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: RichText(
                           text: TextSpan(
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textGrey,
+                              color: context.textSecondary,
                               height: 1.4,
                             ),
                             children: [
@@ -726,7 +767,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               TextSpan(
                                 text: 'Terms of Service',
                                 style: TextStyle(
-                                  color: AppColors.accentGreen,
+                                  color: context.accent,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -734,7 +775,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               TextSpan(
                                 text: 'Privacy Policy',
                                 style: TextStyle(
-                                  color: AppColors.accentGreen,
+                                  color: context.accent,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -755,30 +796,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleSignUp,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentGreen,
-                      foregroundColor: AppColors.primaryDark,
+                      backgroundColor: context.accent,
+                      foregroundColor:
+                          context.isDark ? AppColors.primaryDark : Colors.white,
                       disabledBackgroundColor:
-                          AppColors.accentGreen.withOpacity(0.5),
+                          context.accent.withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.primaryDark,
+                                context.isDark
+                                    ? AppColors.primaryDark
+                                    : Colors.white,
                               ),
                             ),
                           )
                         : Text(
                             'Create Account',
                             style: AppTextStyles.buttonLarge.copyWith(
-                              color: AppColors.primaryDark,
+                              color: context.isDark
+                                  ? AppColors.primaryDark
+                                  : Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -794,7 +840,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     Text(
                       'Already have an account? ',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textGrey,
+                        color: context.textSecondary,
                       ),
                     ),
                     TextButton(
@@ -810,7 +856,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       child: Text(
                         'Sign In',
                         style: AppTextStyles.buttonMedium.copyWith(
-                          color: AppColors.accentGreen,
+                          color: context.accent,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

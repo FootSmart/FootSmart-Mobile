@@ -6,6 +6,7 @@ import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/constants/app_strings.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
+import '../../core/extensions/theme_context.dart';
 
 /// Splash Screen - First screen user sees when opening the app
 ///
@@ -15,8 +16,8 @@ import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 /// - Progress indicator
 /// - Auto-navigation after 5 seconds
 ///
-/// Design matches the uploaded image:
-/// - Dark navy background
+/// Design:
+/// - Theme-aware background gradient
 /// - Centered green logo with concentric circles
 /// - "FootSmart Pro" title with green "Pro" text
 /// - Tagline below
@@ -39,17 +40,24 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _setupAnimations();
     _navigateToNext();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _setSystemUIOverlay();
   }
 
-  /// Configure status bar and navigation bar colors
+  /// Configure status bar and navigation bar colors (theme-aware)
   void _setSystemUIOverlay() {
+    final isDark = context.isDark;
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
+      SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: AppColors.primaryDark,
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: isDark ? context.scaffoldBg : Colors.white,
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
       ),
     );
   }
@@ -100,9 +108,9 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryDark,
+      backgroundColor: context.scaffoldBg,
       body: Container(
-        decoration: BoxDecoration(gradient: AppColors.primaryGradient),
+        decoration: BoxDecoration(gradient: context.bgGradient),
         child: SafeArea(
           child: Center(
             child: Column(
@@ -146,7 +154,9 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                   child: Text(
                     AppStrings.appTagline,
-                    style: AppTextStyles.tagline,
+                    style: AppTextStyles.tagline.copyWith(
+                      color: context.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -163,9 +173,9 @@ class _SplashScreenState extends State<SplashScreen>
                         children: [
                           LinearProgressIndicator(
                             value: _progressAnimation.value,
-                            backgroundColor: AppColors.borderDark,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppColors.accentGreen,
+                            backgroundColor: context.borderColor,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              context.accent,
                             ),
                             minHeight: 3,
                             borderRadius: BorderRadius.circular(2),
@@ -193,13 +203,13 @@ class _SplashScreenState extends State<SplashScreen>
           TextSpan(
             text: 'FootSmart ',
             style: AppTextStyles.displayMedium.copyWith(
-              color: AppColors.textWhite,
+              color: context.textPrimary,
             ),
           ),
           TextSpan(
             text: 'Pro',
             style: AppTextStyles.displayMedium.copyWith(
-              color: AppColors.accentGreen,
+              color: context.accent,
             ),
           ),
         ],
@@ -223,7 +233,7 @@ class _LogoWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accentGreen.withOpacity(0.3),
+            color: context.accent.withValues(alpha: 0.3),
             blurRadius: 40,
             spreadRadius: 0,
             offset: const Offset(0, 10),

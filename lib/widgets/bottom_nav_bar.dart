@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_colors.dart';
 import '../core/constants/app_text_styles.dart';
+import '../core/extensions/theme_context.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -16,10 +16,10 @@ class BottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2A3A),
+        color: context.navBarBg,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: context.shadowColor,
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -102,8 +102,7 @@ class _NavItem extends StatelessWidget {
             Icon(
               isSelected ? selectedIcon : icon,
               size: 22,
-              color:
-                  isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
+              color: isSelected ? context.accent : context.iconInactive,
             ),
             const SizedBox(height: 2),
             Text(
@@ -111,8 +110,7 @@ class _NavItem extends StatelessWidget {
               style: AppTextStyles.caption.copyWith(
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color:
-                    isSelected ? AppColors.accentGreen : AppColors.textGreyDark,
+                color: isSelected ? context.accent : context.iconInactive,
               ),
             ),
           ],

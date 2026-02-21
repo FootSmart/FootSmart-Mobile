@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/extensions/theme_context.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -10,7 +11,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryDark,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -28,13 +29,14 @@ class HomeScreen extends StatelessWidget {
                         Text(
                           'Welcome back,',
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textGrey,
+                            color: context.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'John Doe',
                           style: AppTextStyles.h2.copyWith(
+                            color: context.textPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -45,12 +47,12 @@ class HomeScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.cardBackground,
+                            color: context.cardBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.notifications_outlined,
-                            color: AppColors.textWhite,
+                            color: context.iconColor,
                             size: 24,
                           ),
                         ),
@@ -61,10 +63,10 @@ class HomeScreen extends StatelessWidget {
                             width: 10,
                             height: 10,
                             decoration: BoxDecoration(
-                              color: AppColors.accentOrange,
+                              color: context.accentOrange,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.cardBackground,
+                                color: context.cardBg,
                                 width: 2,
                               ),
                             ),
@@ -81,7 +83,7 @@ class HomeScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
+                    color: context.cardBg,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -91,15 +93,16 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.speed_rounded,
-                                color: AppColors.accentGreen,
+                                color: context.accent,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'Risk Meter',
                                 style: AppTextStyles.h4.copyWith(
+                                  color: context.textPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -111,7 +114,7 @@ class HomeScreen extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.warning.withOpacity(0.15),
+                              color: AppColors.warning.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -141,7 +144,7 @@ class HomeScreen extends StatelessWidget {
                             child: Container(
                               height: 6,
                               decoration: BoxDecoration(
-                                color: AppColors.borderDark,
+                                color: context.borderColor,
                                 borderRadius: BorderRadius.circular(3),
                               ),
                             ),
@@ -151,7 +154,7 @@ class HomeScreen extends StatelessWidget {
                             child: Container(
                               height: 6,
                               decoration: BoxDecoration(
-                                color: AppColors.borderDark,
+                                color: context.borderColor,
                                 borderRadius: BorderRadius.circular(3),
                               ),
                             ),
@@ -162,7 +165,7 @@ class HomeScreen extends StatelessWidget {
                       Text(
                         "You've placed 5 bets this week (Limit: 10)",
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textGrey,
+                          color: context.textSecondary,
                         ),
                       ),
                     ],
@@ -178,6 +181,7 @@ class HomeScreen extends StatelessWidget {
                     Text(
                       'Featured Matches',
                       style: AppTextStyles.h3.copyWith(
+                        color: context.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -186,7 +190,7 @@ class HomeScreen extends StatelessWidget {
                       child: Text(
                         'See All',
                         style: AppTextStyles.buttonMedium.copyWith(
-                          color: AppColors.accentGreen,
+                          color: context.accent,
                         ),
                       ),
                     ),
@@ -228,15 +232,16 @@ class HomeScreen extends StatelessWidget {
                 // Trending Bets Section
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.trending_up,
-                      color: AppColors.accentOrange,
+                      color: context.accentOrange,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Trending Bets',
                       style: AppTextStyles.h3.copyWith(
+                        color: context.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -282,6 +287,7 @@ class HomeScreen extends StatelessWidget {
                     Text(
                       'Top Predictors',
                       style: AppTextStyles.h3.copyWith(
+                        color: context.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -290,7 +296,7 @@ class HomeScreen extends StatelessWidget {
                       child: Text(
                         'View All',
                         style: AppTextStyles.buttonMedium.copyWith(
-                          color: AppColors.accentGreen,
+                          color: context.accent,
                         ),
                       ),
                     ),
@@ -382,7 +388,7 @@ class _MatchCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -394,7 +400,7 @@ class _MatchCard extends StatelessWidget {
               Text(
                 league,
                 style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textGrey,
+                  color: context.textSecondary,
                 ),
               ),
               Container(
@@ -403,7 +409,7 @@ class _MatchCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: riskColor.withOpacity(0.15),
+                  color: riskColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -428,6 +434,7 @@ class _MatchCard extends StatelessWidget {
                 child: Text(
                   team1,
                   style: AppTextStyles.h4.copyWith(
+                    color: context.textPrimary,
                     fontWeight: FontWeight.bold,
                     height: 1.2,
                   ),
@@ -437,12 +444,12 @@ class _MatchCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryDark,
+                  color: context.surfaceBg,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.access_time,
-                  color: AppColors.accentGreen,
+                  color: context.accent,
                   size: 20,
                 ),
               ),
@@ -450,6 +457,7 @@ class _MatchCard extends StatelessWidget {
                 child: Text(
                   team2,
                   style: AppTextStyles.h4.copyWith(
+                    color: context.textPrimary,
                     fontWeight: FontWeight.bold,
                     height: 1.2,
                   ),
@@ -493,7 +501,7 @@ class _MatchCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primaryDark,
+              color: context.surfaceBg,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -501,16 +509,16 @@ class _MatchCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.bolt,
-                      color: AppColors.accentGreen,
+                      color: context.accent,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       'AI Confidence',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textGrey,
+                        color: context.textSecondary,
                       ),
                     ),
                   ],
@@ -520,14 +528,14 @@ class _MatchCard extends StatelessWidget {
                     Text(
                       aiConfidence,
                       style: AppTextStyles.h4.copyWith(
-                        color: AppColors.accentGreen,
+                        color: context.accent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right,
-                      color: AppColors.accentGreen,
+                      color: context.accent,
                       size: 20,
                     ),
                   ],
@@ -555,7 +563,7 @@ class _OddsButton extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.primaryDark,
+        color: context.surfaceBg,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -563,13 +571,14 @@ class _OddsButton extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.caption.copyWith(
-              color: AppColors.textGrey,
+              color: context.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             odds,
             style: AppTextStyles.h4.copyWith(
+              color: context.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -597,7 +606,7 @@ class _TrendingBetCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -609,6 +618,7 @@ class _TrendingBetCard extends StatelessWidget {
                 Text(
                   betTitle,
                   style: AppTextStyles.h4.copyWith(
+                    color: context.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -616,7 +626,7 @@ class _TrendingBetCard extends StatelessWidget {
                 Text(
                   match,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textGrey,
+                    color: context.textSecondary,
                   ),
                 ),
               ],
@@ -628,7 +638,7 @@ class _TrendingBetCard extends StatelessWidget {
               Text(
                 percentage,
                 style: AppTextStyles.h3.copyWith(
-                  color: AppColors.accentGreen,
+                  color: context.accent,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -636,7 +646,7 @@ class _TrendingBetCard extends StatelessWidget {
               Text(
                 backingText,
                 style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textGrey,
+                  color: context.textSecondary,
                   fontSize: 10,
                 ),
               ),
@@ -668,7 +678,7 @@ class _PredictorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -698,6 +708,7 @@ class _PredictorCard extends StatelessWidget {
                 Text(
                   username,
                   style: AppTextStyles.h4.copyWith(
+                    color: context.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -705,7 +716,7 @@ class _PredictorCard extends StatelessWidget {
                 Text(
                   wins,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textGrey,
+                    color: context.textSecondary,
                   ),
                 ),
               ],
@@ -717,7 +728,7 @@ class _PredictorCard extends StatelessWidget {
               Text(
                 accuracy,
                 style: AppTextStyles.h3.copyWith(
-                  color: AppColors.accentGreen,
+                  color: context.accent,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -725,7 +736,7 @@ class _PredictorCard extends StatelessWidget {
               Text(
                 'accuracy',
                 style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textGrey,
+                  color: context.textSecondary,
                   fontSize: 10,
                 ),
               ),

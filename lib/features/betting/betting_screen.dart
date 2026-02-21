@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
+import '../../core/extensions/theme_context.dart';
 
 class BettingScreen extends StatefulWidget {
   const BettingScreen({super.key});
@@ -32,19 +33,19 @@ class _BettingScreenState extends State<BettingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E27),
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0E27),
+        backgroundColor: context.scaffoldBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () =>
               Navigator.pushReplacementNamed(context, AppRoutes.home),
         ),
-        title: const Text(
+        title: Text(
           'Place Bet',
           style: TextStyle(
-            color: Colors.white,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -124,21 +125,17 @@ class _BettingScreenState extends State<BettingScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF00D9A3)
-                      : const Color(0xFF1A1F3A),
+                  color: isSelected ? context.accent : context.cardBg,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF00D9A3)
-                        : const Color(0xFF2A2F4A),
+                    color: isSelected ? context.accent : context.borderSubtle,
                     width: 1,
                   ),
                 ),
                 child: Text(
                   type,
                   style: TextStyle(
-                    color: isSelected ? const Color(0xFF0A0E27) : Colors.white,
+                    color: isSelected ? context.surfaceBg : context.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -170,12 +167,11 @@ class _BettingScreenState extends State<BettingScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1F3A),
+                color: context.cardBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: option.isSelected
-                      ? const Color(0xFF00D9A3)
-                      : const Color(0xFF2A2F4A),
+                  color:
+                      option.isSelected ? context.accent : context.borderSubtle,
                   width: option.isSelected ? 2 : 1,
                 ),
               ),
@@ -184,8 +180,8 @@ class _BettingScreenState extends State<BettingScreen> {
                 children: [
                   Text(
                     option.label,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -194,8 +190,8 @@ class _BettingScreenState extends State<BettingScreen> {
                     children: [
                       Text(
                         option.odds.toString(),
-                        style: const TextStyle(
-                          color: Color(0xFF00D9A3),
+                        style: TextStyle(
+                          color: context.accent,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -204,13 +200,13 @@ class _BettingScreenState extends State<BettingScreen> {
                       if (option.isSelected)
                         Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF00D9A3),
+                          decoration: BoxDecoration(
+                            color: context.accent,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.check,
-                            color: Color(0xFF0A0E27),
+                            color: context.surfaceBg,
                             size: 16,
                           ),
                         ),
@@ -229,10 +225,10 @@ class _BettingScreenState extends State<BettingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Stake Amount',
           style: TextStyle(
-            color: Colors.white,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -243,10 +239,10 @@ class _BettingScreenState extends State<BettingScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1F3A),
+            color: context.cardBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFF2A2F4A),
+              color: context.borderSubtle,
               width: 1,
             ),
           ),
@@ -262,22 +258,22 @@ class _BettingScreenState extends State<BettingScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0A0E27),
+                    color: context.surfaceBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.remove,
-                    color: Colors.white,
+                    color: context.textPrimary,
                     size: 20,
                   ),
                 ),
               ),
               Row(
                 children: [
-                  const Text(
+                  Text(
                     '\$',
                     style: TextStyle(
-                      color: Color(0xFF00D9A3),
+                      color: context.accent,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -285,8 +281,8 @@ class _BettingScreenState extends State<BettingScreen> {
                   const SizedBox(width: 8),
                   Text(
                     stakeAmount.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
@@ -302,12 +298,12 @@ class _BettingScreenState extends State<BettingScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0A0E27),
+                    color: context.surfaceBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.add,
-                    color: Colors.white,
+                    color: context.textPrimary,
                     size: 20,
                   ),
                 ),
@@ -333,22 +329,18 @@ class _BettingScreenState extends State<BettingScreen> {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF00D9A3).withOpacity(0.2)
-                      : const Color(0xFF1A1F3A),
+                      ? context.accent.withValues(alpha: 0.2)
+                      : context.cardBg,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF00D9A3)
-                        : const Color(0xFF2A2F4A),
+                    color: isSelected ? context.accent : context.borderSubtle,
                     width: 1,
                   ),
                 ),
                 child: Text(
                   '\$$amount',
                   style: TextStyle(
-                    color: isSelected
-                        ? const Color(0xFF00D9A3)
-                        : const Color(0xFF8E92BC),
+                    color: isSelected ? context.accent : context.textSecondary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -367,10 +359,10 @@ class _BettingScreenState extends State<BettingScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1F3A),
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFF2A2F4A),
+          color: context.borderSubtle,
           width: 1,
         ),
       ),
@@ -379,17 +371,17 @@ class _BettingScreenState extends State<BettingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Stake',
                 style: TextStyle(
-                  color: Color(0xFF8E92BC),
+                  color: context.textSecondary,
                   fontSize: 14,
                 ),
               ),
               Text(
                 '\$$stakeAmount',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -400,17 +392,17 @@ class _BettingScreenState extends State<BettingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Odds',
                 style: TextStyle(
-                  color: Color(0xFF8E92BC),
+                  color: context.textSecondary,
                   fontSize: 14,
                 ),
               ),
               Text(
                 selectedOdds.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -418,23 +410,23 @@ class _BettingScreenState extends State<BettingScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(color: Color(0xFF2A2F4A), height: 1),
+          Divider(color: context.borderSubtle, height: 1),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Potential Win',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: context.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 '\$$potentialWin',
-                style: const TextStyle(
-                  color: Color(0xFF00D9A3),
+                style: TextStyle(
+                  color: context.accent,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -450,18 +442,18 @@ class _BettingScreenState extends State<BettingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF8A65).withOpacity(0.1),
+        color: const Color(0xFFFF8A65).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFFF8A65).withOpacity(0.3),
+          color: const Color(0xFFFF8A65).withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.warning_amber_rounded,
-            color: const Color(0xFFFF8A65),
+            color: Color(0xFFFF8A65),
             size: 24,
           ),
           const SizedBox(width: 12),
@@ -484,10 +476,10 @@ class _BettingScreenState extends State<BettingScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0E27),
+        color: context.scaffoldBg,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: context.shadowColor,
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -501,8 +493,8 @@ class _BettingScreenState extends State<BettingScreen> {
               _showConfirmationDialog();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D9A3),
-              foregroundColor: const Color(0xFF0A0E27),
+              backgroundColor: context.accent,
+              foregroundColor: context.surfaceBg,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -525,15 +517,15 @@ class _BettingScreenState extends State<BettingScreen> {
   void _showConfirmationDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1F3A),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.elevatedBg,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        title: const Text(
+        title: Text(
           'Confirm Bet',
           style: TextStyle(
-            color: Colors.white,
+            color: context.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -544,7 +536,7 @@ class _BettingScreenState extends State<BettingScreen> {
             Text(
               'You are about to place a bet:',
               style: TextStyle(
-                color: const Color(0xFF8E92BC),
+                color: context.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -552,7 +544,7 @@ class _BettingScreenState extends State<BettingScreen> {
             _buildDetailRow('Outcome', selectedOutcome),
             _buildDetailRow('Odds', selectedOdds.toString()),
             _buildDetailRow('Stake', '\$$stakeAmount'),
-            const Divider(color: Color(0xFF2A2F4A), height: 24),
+            Divider(color: context.borderSubtle, height: 24),
             _buildDetailRow(
               'Potential Win',
               '\$${(stakeAmount * selectedOdds).toStringAsFixed(2)}',
@@ -562,20 +554,20 @@ class _BettingScreenState extends State<BettingScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Color(0xFF8E92BC)),
+              style: TextStyle(color: context.textSecondary),
             ),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               _showSuccessMessage();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D9A3),
-              foregroundColor: const Color(0xFF0A0E27),
+              backgroundColor: context.accent,
+              foregroundColor: context.surfaceBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -597,7 +589,7 @@ class _BettingScreenState extends State<BettingScreen> {
           Text(
             label,
             style: TextStyle(
-              color: isHighlight ? Colors.white : const Color(0xFF8E92BC),
+              color: isHighlight ? context.textPrimary : context.textSecondary,
               fontSize: isHighlight ? 16 : 14,
               fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
             ),
@@ -605,7 +597,7 @@ class _BettingScreenState extends State<BettingScreen> {
           Text(
             value,
             style: TextStyle(
-              color: isHighlight ? const Color(0xFF00D9A3) : Colors.white,
+              color: isHighlight ? context.accent : context.textPrimary,
               fontSize: isHighlight ? 18 : 14,
               fontWeight: FontWeight.w600,
             ),
@@ -619,7 +611,7 @@ class _BettingScreenState extends State<BettingScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Bet placed successfully!'),
-        backgroundColor: const Color(0xFF00D9A3),
+        backgroundColor: context.accent,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),

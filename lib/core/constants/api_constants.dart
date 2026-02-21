@@ -22,6 +22,9 @@ class ApiConstants {
   static const String authLogout = '/auth/logout';
   static const String profile = '/auth/profile';
   static const String updateProfile = '/auth/profile/update';
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String resetPassword = '/auth/reset-password';
+  static const String verifyResetToken = '/auth/verify-reset-token';
 
   // ─── Leagues ─────────────────────────────────────────────────────────────
   static const String leagues = '/leagues';
