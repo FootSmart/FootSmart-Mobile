@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/models/user.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/services/auth_service.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -15,6 +18,13 @@ class _SignInScreenState extends State<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = AuthService(ApiService());
+  }
 
   @override
   void dispose() {
@@ -41,7 +51,7 @@ class _SignInScreenState extends State<SignInScreen> {
     return null;
   }
 
-  void _handleSignIn() {
+  Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -50,15 +60,46 @@ class _SignInScreenState extends State<SignInScreen> {
       _isLoading = true;
     });
 
-    // TODO: Implement actual sign in logic
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      final loginRequest = LoginRequest(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      final authResponse = await _authService.login(loginRequest);
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back, ${authResponse.user.displayName}!'),
+            backgroundColor: AppColors.accentGreen,
+          ),
+        );
+
+        // Navigate to home
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().contains('401') ||
+                      e.toString().contains('Unauthorized')
+                  ? 'Invalid email or password'
+                  : 'Login failed. Please try again.',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
-    });
+    }
   }
 
   @override
