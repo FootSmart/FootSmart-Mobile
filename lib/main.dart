@@ -5,6 +5,8 @@ import 'core/constants/app_colors.dart';
 import 'core/constants/app_theme.dart';
 import 'core/routes/app_routes.dart';
 import 'core/services/theme_service.dart';
+import 'core/services/api_service.dart';
+import 'core/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +16,10 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  // Initialize auth token from storage
+  final authService = AuthService(ApiService());
+  await authService.initializeAuth();
 
   runApp(
     ChangeNotifierProvider(

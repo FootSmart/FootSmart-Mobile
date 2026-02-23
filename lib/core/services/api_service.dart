@@ -6,7 +6,14 @@ class ApiService {
   late final Dio _dio;
   String? _authToken;
 
-  ApiService() {
+  // Singleton pattern
+  static final ApiService _instance = ApiService._internal();
+
+  factory ApiService() {
+    return _instance;
+  }
+
+  ApiService._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: ApiConstants.baseUrl,
       connectTimeout: ApiConstants.connectTimeout,

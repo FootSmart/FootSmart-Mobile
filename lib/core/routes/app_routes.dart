@@ -7,10 +7,12 @@ import 'package:footsmart_pro/features/explore/explore_screen.dart';
 import 'package:footsmart_pro/features/explore/competition_hub_screen.dart';
 import 'package:footsmart_pro/features/explore/players_hub_screen.dart';
 import 'package:footsmart_pro/features/home/home_screen.dart';
+import 'package:footsmart_pro/features/match/match_detail_screen.dart';
 import 'package:footsmart_pro/features/onboarding/onboarding_screen.dart';
 import 'package:footsmart_pro/features/profile/profile_screen.dart';
 import 'package:footsmart_pro/features/splash/splash_screen.dart';
 import 'package:footsmart_pro/features/wallet/wallet_screen.dart';
+import 'package:footsmart_pro/core/models/match.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -27,6 +29,7 @@ class AppRoutes {
   static const String betting = '/betting';
   static const String wallet = '/app/wallet';
   static const String profile = '/app/profile';
+  static const String matchDetail = '/match-detail';
 
   static Map<String, WidgetBuilder> get routes => {
         splash: (context) => const SplashScreen(),
@@ -41,5 +44,10 @@ class AppRoutes {
         betting: (context) => const BettingScreen(),
         wallet: (context) => const WalletScreen(),
         profile: (context) => const ProfileScreen(),
+        matchDetail: (context) {
+          final match =
+              ModalRoute.of(context)!.settings.arguments as FootballMatch;
+          return MatchDetailScreen(match: match);
+        },
       };
 }

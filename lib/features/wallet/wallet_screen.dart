@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:footsmart_pro/core/constants/app_colors.dart';
-import 'package:footsmart_pro/core/constants/app_text_styles.dart';
-import 'package:footsmart_pro/core/routes/app_routes.dart';
-import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
+import 'package:intl/intl.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_text_styles.dart';
+import '../../core/extensions/theme_context.dart';
+import '../../core/routes/app_routes.dart';
+import '../../core/models/wallet.dart';
+import '../../core/services/api_service.dart';
+import '../../core/services/wallet_service.dart';
+import '../../widgets/bottom_nav_bar.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -12,77 +17,164 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  late final WalletService _walletService;
   final TextEditingController _depositController = TextEditingController();
   final TextEditingController _withdrawController = TextEditingController();
 
-  static const double _balance = 287.50;
+  WalletBalance? _balance;
+  List<WalletTransaction> _transactions = [];
 
-  static const List<_Transaction> _transactions = [
-    _Transaction(
-      id: 1,
-      type: TransactionType.deposit,
-      amount: 100.0,
-      status: TransactionStatus.completed,
-      date: '2026-02-13 14:32',
-      method: 'Credit Card',
-    ),
-    _Transaction(
-      id: 2,
-      type: TransactionType.bet,
-      amount: -25.0,
-      status: TransactionStatus.settled,
-      date: '2026-02-13 13:15',
-      match: 'Man City vs Liverpool',
-      result: BetResult.won,
-      payout: 52.50,
-    ),
-    _Transaction(
-      id: 3,
-      type: TransactionType.withdraw,
-      amount: -50.0,
-      status: TransactionStatus.pending,
-      date: '2026-02-12 18:45',
-      method: 'Bank Transfer',
-    ),
-    _Transaction(
-      id: 4,
-      type: TransactionType.bet,
-      amount: -15.0,
-      status: TransactionStatus.settled,
-      date: '2026-02-12 16:20',
-      match: 'Barcelona vs Real Madrid',
-      result: BetResult.lost,
-    ),
-    _Transaction(
-      id: 5,
-      type: TransactionType.deposit,
-      amount: 200.0,
-      status: TransactionStatus.completed,
-      date: '2026-02-11 10:15',
-      method: 'PayPal',
-    ),
-  ];
+  bool _isLoadingBalance = true;
+  bool _isLoadingTransactions = true;
+  bool _isProcessingDeposit = false;
+  bool _isProcessingWithdraw = false;
 
-  static const List<_PendingBet> _pendingBets = [
-    _PendingBet(
-      id: 1,
-      match: 'Bayern vs Dortmund',
-      bet: 'Bayern Win',
-      stake: 20.0,
-      odds: 1.85,
-      potentialWin: 37.0,
-      time: 'Tomorrow, 18:30',
-    ),
-    _PendingBet(
-      id: 2,
-      match: 'PSG vs Marseille',
-      bet: 'Over 2.5 Goals',
-      stake: 15.0,
-      odds: 1.95,
-      potentialWin: 29.25,
-      time: 'Tomorrow, 20:00',
-    ),
-  ];
+  String? _balanceError;
+  String? _transactionsError;
+
+  @override
+  void initState() {
+    super.initState();
+    _walletService = WalletService(ApiService());
+    _loadWalletData();
+  }
+
+  Future<void> _loadWalletData() async {
+    await Future.wait([
+      _loadBalance(),
+      _loadTransactions(),
+    ]);
+  }
+
+  Future<void> _loadBalance() async {
+    setState(() {
+      _isLoadingBalance = true;
+      _balanceError = null;
+    });
+
+    try {
+      final balance = await _walletService.getBalance();
+      if (mounted) {
+        setState(() {
+          _balance = balance;
+          _isLoadingBalance = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _balanceError = e.toString();
+          _isLoadingBalance = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() {
+      _isLoadingTransactions = true;
+      _transactionsError = null;
+    });
+
+    try {
+      final response = await _walletService.getTransactions(limit: 50);
+      if (mounted) {
+        setState(() {
+          _transactions = response.transactions;
+          _isLoadingTransactions = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _transactionsError = e.toString();
+          _isLoadingTransactions = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleDeposit(double amount) async {
+    setState(() => _isProcessingDeposit = true);
+
+    try {
+      final result = await _walletService.deposit(amount);
+      if (mounted) {
+        setState(() => _isProcessingDeposit = false);
+
+        // Update balance locally
+        _balance = WalletBalance(
+          balance: result.transaction.newBalance,
+          currency: _balance?.currency ?? 'USD',
+        );
+
+        // Reload transactions
+        await _loadTransactions();
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  Text('Successfully deposited \$${amount.toStringAsFixed(2)}'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessingDeposit = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deposit failed: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleWithdraw(double amount) async {
+    setState(() => _isProcessingWithdraw = true);
+
+    try {
+      final result = await _walletService.withdraw(amount);
+      if (mounted) {
+        setState(() => _isProcessingWithdraw = false);
+
+        // Update balance locally
+        _balance = WalletBalance(
+          balance: result.transaction.newBalance,
+          currency: _balance?.currency ?? 'USD',
+        );
+
+        // Reload transactions
+        await _loadTransactions();
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  Text('Successfully withdrew \$${amount.toStringAsFixed(2)}'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessingWithdraw = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Withdrawal failed: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -94,28 +186,36 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildPendingBetsSection(),
-                    const SizedBox(height: 24),
-                    _buildTransactionSection(),
-                  ],
+        child: _isLoadingBalance && _isLoadingTransactions
+            ? Center(
+                child: CircularProgressIndicator(color: context.accent),
+              )
+            : RefreshIndicator(
+                onRefresh: _loadWalletData,
+                color: context.accent,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 24),
+                            _buildTransactionSection(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: 3,
@@ -135,14 +235,21 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildHeader() {
+    final balance = _balance?.balance ?? 0.0;
+    final balanceWhole = balance.floor();
+    final balanceDecimal = ((balance - balanceWhole) * 100).round();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A1F2E), Colors.transparent],
+          colors: [
+            context.cardBg.withValues(alpha: 0.8),
+            Colors.transparent,
+          ],
         ),
       ),
       child: Column(
@@ -150,7 +257,10 @@ class _WalletScreenState extends State<WalletScreen> {
         children: [
           Text(
             'Wallet',
-            style: AppTextStyles.h2.copyWith(fontWeight: FontWeight.bold),
+            style: AppTextStyles.h2.copyWith(
+              fontWeight: FontWeight.bold,
+              color: context.textPrimary,
+            ),
           ),
           const SizedBox(height: 20),
           Container(
@@ -158,10 +268,13 @@ class _WalletScreenState extends State<WalletScreen> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF00FF88), Color(0xFF00CC6E)],
+                colors: [
+                  context.accent,
+                  context.accent.withValues(alpha: 0.8),
+                ],
               ),
             ),
             child: Column(
@@ -170,34 +283,51 @@ class _WalletScreenState extends State<WalletScreen> {
                 Text(
                   'Available Balance',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: const Color(0xFF0B1220).withOpacity(0.75),
+                    color: AppColors.primaryDark.withValues(alpha: 0.75),
                   ),
                 ),
                 const SizedBox(height: 8),
-                RichText(
-                  text: TextSpan(
-                    style: AppTextStyles.h1.copyWith(
-                      color: const Color(0xFF0B1220),
-                      fontSize: 44,
+                if (_isLoadingBalance)
+                  const CircularProgressIndicator(
+                    color: AppColors.primaryDark,
+                    strokeWidth: 2,
+                  )
+                else if (_balanceError != null)
+                  Text(
+                    'Error loading balance',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.error,
                     ),
-                    children: const [
-                      TextSpan(text: '\$287'),
-                      TextSpan(
-                        text: '.50',
-                        style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.w500),
+                  )
+                else
+                  RichText(
+                    text: TextSpan(
+                      style: AppTextStyles.h1.copyWith(
+                        color: AppColors.primaryDark,
+                        fontSize: 44,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
+                      children: [
+                        TextSpan(text: '\$$balanceWhole'),
+                        TextSpan(
+                          text: '.${balanceDecimal.toString().padLeft(2, '0')}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: _showDepositDialog,
+                        onPressed:
+                            _isLoadingBalance ? null : _showDepositDialog,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0B1220),
+                          backgroundColor: AppColors.primaryDark,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -212,12 +342,16 @@ class _WalletScreenState extends State<WalletScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _showWithdrawDialog,
+                        onPressed:
+                            _isLoadingBalance ? null : _showWithdrawDialog,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF0B1220),
+                          foregroundColor: AppColors.primaryDark,
                           side: const BorderSide(
-                              color: Color(0xFF0B1220), width: 2),
-                          backgroundColor: const Color(0x330B1220),
+                            color: AppColors.primaryDark,
+                            width: 2,
+                          ),
+                          backgroundColor:
+                              AppColors.primaryDark.withValues(alpha: 0.2),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -232,70 +366,8 @@ class _WalletScreenState extends State<WalletScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: const [
-              Expanded(
-                child: _QuickStatCard(
-                  label: 'Weekly Wagered',
-                  value: '\$125',
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: _QuickStatCard(
-                  label: 'Weekly Won',
-                  value: '\$89.75',
-                  valueColor: AppColors.accentGreen,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPendingBetsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.schedule_rounded,
-                color: AppColors.accentOrange, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Pending Bets',
-              style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (_pendingBets.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: _cardDecoration,
-            child: Text(
-              'No pending bets',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium
-                  .copyWith(color: const Color(0xFFA0A4B8)),
-            ),
-          )
-        else
-          Column(
-            children: _pendingBets
-                .map(
-                  (bet) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _PendingBetCard(bet: bet),
-                  ),
-                )
-                .toList(),
-          ),
-      ],
     );
   }
 
@@ -308,16 +380,74 @@ class _WalletScreenState extends State<WalletScreen> {
           style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Column(
-          children: _transactions
-              .map(
-                (transaction) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _TransactionCard(transaction: transaction),
+        if (_isLoadingTransactions)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_transactionsError != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Error loading transactions',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.error,
+                  ),
                 ),
-              )
-              .toList(),
-        ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _loadTransactions,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          )
+        else if (_transactions.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: context.cardBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF252B3D)),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.receipt_long_rounded,
+                  size: 48,
+                  color: context.textSecondary.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No transactions yet',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: context.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: _transactions
+                .map(
+                  (transaction) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _TransactionCard(transaction: transaction),
+                  ),
+                )
+                .toList(),
+          ),
       ],
     );
   }
@@ -394,16 +524,32 @@ class _WalletScreenState extends State<WalletScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext);
-                      _depositController.clear();
-                    },
+                    onPressed: _isProcessingDeposit
+                        ? null
+                        : () async {
+                            final amount =
+                                double.tryParse(_depositController.text);
+                            if (amount != null && amount > 0) {
+                              Navigator.pop(dialogContext);
+                              await _handleDeposit(amount);
+                              _depositController.clear();
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       foregroundColor: const Color(0xFF0B1220),
                       backgroundColor: AppColors.accentGreen,
                     ),
-                    child: Text(
-                        'Deposit \$${_depositController.text.isEmpty ? '0' : _depositController.text}'),
+                    child: _isProcessingDeposit
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF0B1220),
+                            ),
+                          )
+                        : Text(
+                            'Deposit \$${_depositController.text.isEmpty ? '0' : _depositController.text}'),
                   ),
                 ),
               ],
@@ -450,7 +596,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '\$${_balance.toStringAsFixed(2)}',
+                            '\$${(_balance?.balance ?? 0.0).toStringAsFixed(2)}',
                             style: AppTextStyles.h3
                                 .copyWith(fontWeight: FontWeight.bold),
                           ),
@@ -477,7 +623,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           label: 'All',
                           onTap: () => setModalState(
                             () => _withdrawController.text =
-                                _balance.toStringAsFixed(2),
+                                (_balance?.balance ?? 0.0).toStringAsFixed(2),
                           ),
                         ),
                       ]).toList(),
@@ -489,17 +635,33 @@ class _WalletScreenState extends State<WalletScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext);
-                      _withdrawController.clear();
-                    },
+                    onPressed: _isProcessingWithdraw
+                        ? null
+                        : () async {
+                            final amount =
+                                double.tryParse(_withdrawController.text);
+                            if (amount != null && amount > 0) {
+                              Navigator.pop(dialogContext);
+                              await _handleWithdraw(amount);
+                              _withdrawController.clear();
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       foregroundColor: const Color(0xFF0B1220),
                       backgroundColor: AppColors.accentGreen,
                     ),
-                    child: Text(
-                      'Withdraw \$${_withdrawController.text.isEmpty ? '0' : _withdrawController.text}',
-                    ),
+                    child: _isProcessingWithdraw
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF0B1220),
+                            ),
+                          )
+                        : Text(
+                            'Withdraw \$${_withdrawController.text.isEmpty ? '0' : _withdrawController.text}',
+                          ),
                   ),
                 ),
                 Padding(
@@ -526,179 +688,48 @@ class _WalletScreenState extends State<WalletScreen> {
   );
 }
 
-class _QuickStatCard extends StatelessWidget {
-  const _QuickStatCard({
-    required this.label,
-    required this.value,
-    this.valueColor = Colors.white,
-  });
-
-  final String label;
-  final String value;
-  final Color valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1F2E),
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-        border: Border.fromBorderSide(BorderSide(color: Color(0xFF252B3D))),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.bodySmall
-                .copyWith(color: const Color(0xFFA0A4B8)),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: AppTextStyles.h3
-                .copyWith(fontWeight: FontWeight.bold, color: valueColor),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PendingBetCard extends StatelessWidget {
-  const _PendingBetCard({required this.bet});
-
-  final _PendingBet bet;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1F2E),
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-        border: Border.fromBorderSide(BorderSide(color: Color(0xFF252B3D))),
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      bet.match,
-                      style: AppTextStyles.bodyMedium
-                          .copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      bet.bet,
-                      style: AppTextStyles.bodySmall
-                          .copyWith(color: const Color(0xFFA0A4B8)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      bet.time,
-                      style: AppTextStyles.caption
-                          .copyWith(color: const Color(0xFFA0A4B8)),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0x33FF7A00),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'PENDING',
-                  style: AppTextStyles.overline.copyWith(
-                    color: AppColors.accentOrange,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Divider(color: Color(0xFF252B3D), height: 1),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _BetMetric(label: 'Stake', value: '\$${bet.stake}'),
-              _BetMetric(label: 'Odds', value: '${bet.odds}'),
-              _BetMetric(
-                  label: 'To Win',
-                  value: '\$${bet.potentialWin}',
-                  color: AppColors.accentGreen),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BetMetric extends StatelessWidget {
-  const _BetMetric(
-      {required this.label, required this.value, this.color = Colors.white});
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: AppTextStyles.caption
-                  .copyWith(color: const Color(0xFFA0A4B8))),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: AppTextStyles.bodyMedium
-                .copyWith(fontWeight: FontWeight.bold, color: color),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TransactionCard extends StatelessWidget {
   const _TransactionCard({required this.transaction});
 
-  final _Transaction transaction;
+  final WalletTransaction transaction;
 
   @override
   Widget build(BuildContext context) {
-    final isDeposit = transaction.type == TransactionType.deposit;
-    final isWithdraw = transaction.type == TransactionType.withdraw;
-    final isBet = transaction.type == TransactionType.bet;
+    final isDeposit = transaction.type == WalletTransactionType.deposit;
+    final isWithdraw = transaction.type == WalletTransactionType.withdraw;
+    final isWin = transaction.type == WalletTransactionType.win;
 
     Color iconBackground = const Color(0x33A0A4B8);
     Color iconColor = const Color(0xFFA0A4B8);
     IconData iconData = Icons.schedule_rounded;
+    String typeLabel = 'Transaction';
 
     if (isDeposit) {
       iconBackground = const Color(0x3300FF88);
       iconColor = AppColors.accentGreen;
       iconData = Icons.south_west_rounded;
+      typeLabel = 'Deposit';
     } else if (isWithdraw) {
       iconBackground = const Color(0x33FF7A00);
       iconColor = AppColors.accentOrange;
       iconData = Icons.north_east_rounded;
+      typeLabel = 'Withdrawal';
+    } else if (isWin) {
+      iconBackground = const Color(0x3300FF88);
+      iconColor = AppColors.accentGreen;
+      iconData = Icons.celebration_rounded;
+      typeLabel = 'Win';
+    } else {
+      iconBackground = const Color(0x33FFD700);
+      iconColor = const Color(0xFFFFD700);
+      iconData = Icons.sports_soccer_rounded;
+      typeLabel = 'Bet';
     }
+
+    final dateFormat = DateFormat('MMM dd, yyyy');
+    final timeFormat = DateFormat('HH:mm');
+    final formattedDate = dateFormat.format(transaction.createdAt);
+    final formattedTime = timeFormat.format(transaction.createdAt);
 
     return Container(
       width: double.infinity,
@@ -723,60 +754,27 @@ class _TransactionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isDeposit
-                      ? 'Deposit'
-                      : isWithdraw
-                          ? 'Withdrawal'
-                          : (transaction.match ?? 'Bet'),
+                  typeLabel,
                   style: AppTextStyles.bodyMedium
                       .copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${transaction.date}${transaction.method == null ? '' : ' • ${transaction.method}'}',
+                  '$formattedDate • $formattedTime',
                   style: AppTextStyles.caption
                       .copyWith(color: const Color(0xFFA0A4B8)),
                 ),
-                if (isBet && transaction.result != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      transaction.result == BetResult.won
-                          ? 'Won \$${transaction.payout?.toStringAsFixed(2) ?? '0'}'
-                          : 'Lost',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: transaction.result == BetResult.won
-                            ? AppColors.accentGreen
-                            : const Color(0xFFF87171),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${transaction.amount > 0 ? '+' : ''}\$${transaction.amount.abs()}',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: transaction.amount > 0
-                      ? AppColors.accentGreen
-                      : AppColors.textWhite,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (transaction.status == TransactionStatus.pending)
-                Text(
-                  'Pending',
-                  style: AppTextStyles.caption
-                      .copyWith(color: AppColors.accentOrange),
-                ),
-              if (transaction.status == TransactionStatus.completed)
-                const Icon(Icons.check_circle_rounded,
-                    color: AppColors.accentGreen, size: 16),
-            ],
+          Text(
+            '${transaction.isPositive ? '+' : '-'}\$${transaction.amount.abs().toStringAsFixed(2)}',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: transaction.isPositive
+                  ? AppColors.accentGreen
+                  : AppColors.textWhite,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -842,54 +840,4 @@ class _AmountChip extends StatelessWidget {
       ),
     );
   }
-}
-
-class _PendingBet {
-  const _PendingBet({
-    required this.id,
-    required this.match,
-    required this.bet,
-    required this.stake,
-    required this.odds,
-    required this.potentialWin,
-    required this.time,
-  });
-
-  final int id;
-  final String match;
-  final String bet;
-  final double stake;
-  final double odds;
-  final double potentialWin;
-  final String time;
-}
-
-enum TransactionType { deposit, withdraw, bet }
-
-enum TransactionStatus { pending, completed, settled }
-
-enum BetResult { won, lost }
-
-class _Transaction {
-  const _Transaction({
-    required this.id,
-    required this.type,
-    required this.amount,
-    required this.status,
-    required this.date,
-    this.method,
-    this.match,
-    this.result,
-    this.payout,
-  });
-
-  final int id;
-  final TransactionType type;
-  final double amount;
-  final TransactionStatus status;
-  final String date;
-  final String? method;
-  final String? match;
-  final BetResult? result;
-  final double? payout;
 }

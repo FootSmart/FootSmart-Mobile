@@ -3,6 +3,9 @@ import '../../core/models/league.dart';
 import '../../core/models/standing.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/league_service.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_text_styles.dart';
+import '../../core/extensions/theme_context.dart';
 
 class CompetitionHubScreen extends StatefulWidget {
   const CompetitionHubScreen({super.key});
@@ -11,9 +14,12 @@ class CompetitionHubScreen extends StatefulWidget {
   State<CompetitionHubScreen> createState() => _CompetitionHubScreenState();
 }
 
-class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
+class _CompetitionHubScreenState extends State<CompetitionHubScreen>
+    with SingleTickerProviderStateMixin {
   // Services
   late final LeagueService _leagueService;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   // State
   List<League> _leagues = [];
@@ -27,7 +33,20 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
   void initState() {
     super.initState();
     _leagueService = LeagueService(ApiService());
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
     _loadLeagues();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   /// Load all available leagues from the API
@@ -65,10 +84,33 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
 
     try {
       final standings = await _leagueService.getLeagueStandings(leagueId);
+
+      // Remove duplicates by teamId as a safety measure
+      // Backend filters by MAX matchday, but this provides extra protection
+      final seenTeamIds = <String>{};
+      final uniqueStandings = standings.standings.where((standing) {
+        if (seenTeamIds.contains(standing.teamId)) {
+          return false;
+        }
+        seenTeamIds.add(standing.teamId);
+        return true;
+      }).toList();
+
+      // Sort by position
+      uniqueStandings.sort((a, b) => a.position.compareTo(b.position));
+
       setState(() {
-        _currentStandings = standings;
+        _currentStandings = LeagueStandings(
+          id: standings.id,
+          name: standings.name,
+          country: standings.country,
+          season: standings.season,
+          standings: uniqueStandings,
+        );
         _isLoadingStandings = false;
       });
+
+      _animationController.forward(from: 0.0);
     } catch (e) {
       setState(() {
         _isLoadingStandings = false;
@@ -91,7 +133,7 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E27),
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: _isLoadingLeagues
             ? _buildLoadingState()
@@ -104,9 +146,9 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
 
   // Loading state
   Widget _buildLoadingState() {
-    return const Center(
+    return Center(
       child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D9A3)),
+        valueColor: AlwaysStoppedAnimation<Color>(context.accent),
       ),
     );
   }
@@ -121,15 +163,14 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
           children: [
             const Icon(
               Icons.error_outline,
-              color: Color(0xFF8E92BC),
+              color: AppColors.error,
               size: 64,
             ),
             const SizedBox(height: 16),
             Text(
               _errorMessage ?? 'Failed to load leagues',
-              style: const TextStyle(
-                color: Color(0xFF8E92BC),
-                fontSize: 16,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: context.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -137,8 +178,8 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
             ElevatedButton(
               onPressed: _loadLeagues,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D9A3),
-                foregroundColor: Colors.white,
+                backgroundColor: context.accent,
+                foregroundColor: AppColors.primaryDark,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
                   vertical: 16,
@@ -162,15 +203,17 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
         // Header
         _buildHeader(),
 
-        // League Selector
+        const SizedBox(height: 16),
+
+        // League Selector Button
         _buildLeagueSelector(),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
-        // League Stats
+        // League Stats (Compact)
         if (_selectedLeague != null) _buildLeagueStats(),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
         // League Standings Header
         const Padding(
@@ -212,164 +255,316 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
 
   // Header widget
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
+    return Container(
+      margin: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            context.accent.withValues(alpha: 0.2),
+            context.accent.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.accent.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1F3A),
-                borderRadius: BorderRadius.circular(8),
+                color: context.cardBg,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Colors.white,
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: context.accent,
                 size: 20,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF00D9A3),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  context.accent,
+                  context.accent.withValues(alpha: 0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: context.accent.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: const Icon(
-              Icons.emoji_events_outlined,
-              color: Colors.white,
-              size: 24,
+              Icons.emoji_events,
+              color: AppColors.primaryDark,
+              size: 28,
             ),
           ),
-          const SizedBox(width: 12),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Competition Hub',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Competition Hub',
+                  style: AppTextStyles.h2.copyWith(
+                    color: context.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Text(
-                'League standings & analytics',
-                style: TextStyle(
-                  color: Color(0xFF8E92BC),
-                  fontSize: 14,
+                const SizedBox(height: 2),
+                Text(
+                  'Live standings & analytics',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: context.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // League selector widget
+  // League selector button widget
   Widget _buildLeagueSelector() {
-    return SizedBox(
-      height: 48,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        itemCount: _leagues.length,
-        itemBuilder: (context, index) {
-          final league = _leagues[index];
-          final isSelected = _selectedLeague?.id == league.id;
-
-          return GestureDetector(
-            onTap: () => _onLeagueSelected(league),
-            child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF00D9A3)
-                    : const Color(0xFF1A1F3A),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected
-                      ? const Color(0xFF00D9A3)
-                      : const Color(0xFF2A2F4A),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: GestureDetector(
+        onTap: _showLeagueBottomSheet,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                context.cardBg,
+                context.cardBg.withValues(alpha: 0.7),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: context.accent.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      context.accent,
+                      context.accent.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.sports_soccer,
+                  color: AppColors.primaryDark,
+                  size: 18,
                 ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _selectedLeague?.name ?? 'Select League',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: context.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (_selectedLeague?.country != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        _selectedLeague!.country!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: context.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: context.accent,
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Show league selection bottom sheet
+  void _showLeagueBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: context.scaffoldBg,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.textSecondary.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.sports_soccer,
-                    color: Colors.white,
-                    size: 16,
+                  Icon(
+                    Icons.filter_list_rounded,
+                    color: context.accent,
+                    size: 24,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 12),
                   Text(
-                    league.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                    'Select League',
+                    style: AppTextStyles.h3.copyWith(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
+            const SizedBox(height: 20),
+            // League list
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _leagues.length,
+                itemBuilder: (context, index) {
+                  final league = _leagues[index];
+                  final isSelected = _selectedLeague?.id == league.id;
 
-  // League stats widget
-  Widget _buildLeagueStats() {
-    final league = _selectedLeague!;
-    final standings = _currentStandings;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1F3A),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF2A2F4A),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              league.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                  return GestureDetector(
+                    onTap: () {
+                      _onLeagueSelected(league);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: isSelected
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  context.accent.withValues(alpha: 0.2),
+                                  context.accent.withValues(alpha: 0.1),
+                                ],
+                              )
+                            : null,
+                        color: isSelected ? null : context.cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? context.accent
+                              : context.accent.withValues(alpha: 0.2),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? context.accent
+                                  : context.accent.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.sports_soccer,
+                              color: isSelected
+                                  ? AppColors.primaryDark
+                                  : context.accent,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  league.name,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: context.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (league.country != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    league.country!,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: context.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          if (isSelected)
+                            Icon(
+                              Icons.check_circle,
+                              color: context.accent,
+                              size: 24,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              league.country ?? 'Unknown',
-              style: const TextStyle(
-                color: Color(0xFF8E92BC),
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _buildStatItem(
-                    'Teams', standings?.standings.length.toString() ?? '-'),
-                const SizedBox(width: 24),
-                _buildStatItem('Matches', '-'),
-                const SizedBox(width: 24),
-                _buildStatItem('Season', league.season?.toString() ?? 'N/A'),
-              ],
             ),
           ],
         ),
@@ -377,25 +572,73 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
     );
   }
 
-  // Stat item widget
+  // League stats widget (Compact)
+  Widget _buildLeagueStats() {
+    final league = _selectedLeague!;
+    final standings = _currentStandings;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              context.cardBg,
+              context.cardBg.withValues(alpha: 0.5),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.accent.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildStatItem(
+                  'Teams', standings?.standings.length.toString() ?? '-'),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child:
+                  _buildStatItem('Season', league.season?.toString() ?? 'N/A'),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatItem(
+                  'Matchday',
+                  standings?.standings.firstOrNull?.matchday?.toString() ??
+                      '-'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Stat item widget (Compact)
   Widget _buildStatItem(String label, String value) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF8E92BC),
-            fontSize: 12,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: context.textSecondary,
+            fontSize: 11,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: context.accent,
             fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
       ],
@@ -407,36 +650,45 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1A1F3A),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(12),
-            topRight: Radius.circular(12),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              context.cardBg,
+              context.cardBg.withValues(alpha: 0.7),
+            ],
+          ),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+          ),
+          border: Border.all(
+            color: context.accent.withValues(alpha: 0.2),
+            width: 1.5,
           ),
         ),
-        child: const Row(
+        child: Row(
           children: [
             SizedBox(
               width: 30,
               child: Text(
-                'Pos',
-                style: TextStyle(
-                  color: Color(0xFF8E92BC),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                '#',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: context.accent,
+                  fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Team',
-                style: TextStyle(
-                  color: Color(0xFF8E92BC),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: context.accent,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -444,36 +696,33 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
               width: 30,
               child: Text(
                 'P',
-                style: TextStyle(
-                  color: Color(0xFF8E92BC),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: context.accent,
+                  fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             SizedBox(
               width: 30,
               child: Text(
                 'W',
-                style: TextStyle(
-                  color: Color(0xFF8E92BC),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: context.accent,
+                  fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             SizedBox(
               width: 40,
               child: Text(
                 'Pts',
-                style: TextStyle(
-                  color: Color(0xFF8E92BC),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: context.accent,
+                  fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -489,132 +738,189 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF1A1F3A),
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12),
+        decoration: BoxDecoration(
+          color: context.cardBg,
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(
+            color: context.accent.withValues(alpha: 0.2),
+            width: 1.5,
           ),
         ),
         child: _isLoadingStandings
-            ? const Center(
+            ? Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFF00D9A3)),
+                    valueColor: AlwaysStoppedAnimation<Color>(context.accent),
                   ),
                 ),
               )
             : _currentStandings == null || _currentStandings!.standings.isEmpty
-                ? const Center(
+                ? Center(
                     child: Padding(
-                      padding: EdgeInsets.all(20.0),
+                      padding: const EdgeInsets.all(20.0),
                       child: Text(
                         'No standings available',
-                        style: TextStyle(
-                          color: Color(0xFF8E92BC),
-                          fontSize: 14,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: context.textSecondary,
                         ),
                       ),
                     ),
                   )
-                : ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: _currentStandings!.standings.length,
-                    itemBuilder: (context, index) {
-                      final standing = _currentStandings!.standings[index];
-                      final position = standing.position;
+                : FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: _currentStandings!.standings.length,
+                      itemBuilder: (context, index) {
+                        final standing = _currentStandings!.standings[index];
+                        final position = standing.position;
 
-                      Color positionColor = const Color(0xFF8E92BC);
-                      if (position <= 4) {
-                        positionColor = const Color(0xFF00D9A3);
-                      } else if (position == 5) {
-                        positionColor = const Color(0xFFFFB74D);
-                      }
+                        Color positionColor = context.textSecondary;
+                        if (position <= 4) {
+                          positionColor = context.accent;
+                        } else if (position == 5) {
+                          positionColor = const Color(0xFFFFB74D);
+                        } else if (position >= 18) {
+                          positionColor = AppColors.error;
+                        }
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: const Color(0xFF2A2F4A).withOpacity(0.3),
-                              width: 0.5,
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: context.accent.withValues(alpha: 0.1),
+                                width: 0.5,
+                              ),
                             ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: positionColor.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  position.toString(),
-                                  style: TextStyle(
-                                    color: positionColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      positionColor.withValues(alpha: 0.2),
+                                      positionColor.withValues(alpha: 0.1),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: positionColor.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    position.toString(),
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: positionColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                standing.teamName,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                              const SizedBox(width: 12),
+                              if (standing.teamLogo != null) ...[
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    standing.teamLogo!,
+                                    width: 32,
+                                    height: 32,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: context.accent
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Icon(
+                                          Icons.shield,
+                                          size: 18,
+                                          color: context.accent,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  standing.teamName,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: context.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            ),
-                            SizedBox(
-                              width: 30,
-                              child: Text(
-                                standing.played.toString(),
-                                style: const TextStyle(
-                                  color: Color(0xFF8E92BC),
-                                  fontSize: 13,
+                              SizedBox(
+                                width: 30,
+                                child: Text(
+                                  standing.played.toString(),
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: context.textSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: 30,
-                              child: Text(
-                                standing.wins.toString(),
-                                style: const TextStyle(
-                                  color: Color(0xFF8E92BC),
-                                  fontSize: 13,
+                              const SizedBox(width: 16),
+                              SizedBox(
+                                width: 30,
+                                child: Text(
+                                  standing.wins.toString(),
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: context.textSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: 40,
-                              child: Text(
-                                standing.points.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                              const SizedBox(width: 16),
+                              Container(
+                                width: 44,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      context.accent.withValues(alpha: 0.2),
+                                      context.accent.withValues(alpha: 0.1),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                textAlign: TextAlign.center,
+                                child: Text(
+                                  standing.points.toString(),
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: context.accent,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
       ),
     );
