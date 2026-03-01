@@ -5,6 +5,7 @@ import '../../core/models/player.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/league_service.dart';
 import '../../core/services/team_service.dart';
+import 'player_detail_screen.dart';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -765,147 +766,179 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
     if (rank == 2) rankColor = const Color(0xFFC0C0C0);
     if (rank == 3) rankColor = const Color(0xFFCD7F32);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F3A),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color:
-              rank <= 3 ? rankColor.withOpacity(0.3) : const Color(0xFF2A2F4A),
-          width: rank <= 3 ? 1.5 : 1,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PlayerDetailScreen(player: player),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1F3A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: rank <= 3
+                ? rankColor.withOpacity(0.3)
+                : const Color(0xFF2A2F4A),
+            width: rank <= 3 ? 1.5 : 1,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          // ─── Rank badge ──────────────────────────────────────────────────
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: rankColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: rank <= 3
-                  ? Icon(
-                      rank == 1
-                          ? Icons.workspace_premium
-                          : Icons.emoji_events_outlined,
-                      color: rankColor,
-                      size: 16,
-                    )
-                  : Text(
-                      rank.toString(),
-                      style: TextStyle(
+        child: Row(
+          children: [
+            // ─── Rank badge ──────────────────────────────────────────────────
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: rankColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: rank <= 3
+                    ? Icon(
+                        rank == 1
+                            ? Icons.workspace_premium
+                            : Icons.emoji_events_outlined,
                         color: rankColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // ─── Avatar ──────────────────────────────────────────────────────
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  statColor.withOpacity(0.3),
-                  statColor.withOpacity(0.1),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                _initials(player.name),
-                style: TextStyle(
-                  color: statColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // ─── Player info ─────────────────────────────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  player.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    if (player.position != null) ...[
-                      _positionBadge(player.position!),
-                      const SizedBox(width: 6),
-                    ],
-                    if (player.nationality != null)
-                      Text(
-                        player.nationality!,
-                        style: const TextStyle(
-                          color: Color(0xFF8E92BC),
-                          fontSize: 11,
+                        size: 16,
+                      )
+                    : Text(
+                        rank.toString(),
+                        style: TextStyle(
+                          color: rankColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // ─── Avatar ──────────────────────────────────────────────────────
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    statColor.withOpacity(0.3),
+                    statColor.withOpacity(0.1),
                   ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: player.photoUrl != null && player.photoUrl!.isNotEmpty
+                    ? Image.network(
+                        player.photoUrl!,
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            _initials(player.name),
+                            style: TextStyle(
+                              color: statColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          _initials(player.name),
+                          style: TextStyle(
+                            color: statColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // ─── Player info ─────────────────────────────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    player.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (player.position != null) ...[
+                        _positionBadge(player.position!),
+                        const SizedBox(width: 6),
+                      ],
+                      if (player.nationality != null)
+                        Text(
+                          player.nationality!,
+                          style: const TextStyle(
+                            color: Color(0xFF8E92BC),
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Mini stat pills row
+                  _buildMiniStatPills(player),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // ─── Primary stat ─────────────────────────────────────────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    statValue.toString(),
+                    style: TextStyle(
+                      color: statColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 4),
-                // Mini stat pills row
-                _buildMiniStatPills(player),
+                Text(
+                  _sortStat.label,
+                  style:
+                      const TextStyle(color: Color(0xFF8E92BC), fontSize: 10),
+                ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-
-          // ─── Primary stat ─────────────────────────────────────────────────
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  statValue.toString(),
-                  style: TextStyle(
-                    color: statColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _sortStat.label,
-                style: const TextStyle(color: Color(0xFF8E92BC), fontSize: 10),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

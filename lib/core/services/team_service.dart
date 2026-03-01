@@ -1,5 +1,5 @@
 import '../models/team.dart';
-import '../models/player.dart';
+import '../models/player.dart'; // Player + PlayerStats
 import '../constants/api_constants.dart';
 import 'api_service.dart';
 
@@ -96,6 +96,18 @@ class TeamService {
           .toList();
     } catch (e) {
       throw ApiException('Failed to fetch top scorers: $e');
+    }
+  }
+
+  /// Detailed player stats from v_player_stats view
+  Future<PlayerStats> getPlayerStats(String playerId) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.playerStats(playerId),
+      );
+      return PlayerStats.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw ApiException('Failed to fetch player stats: $e');
     }
   }
 }

@@ -63,10 +63,27 @@ class _SignInScreenState extends State<SignInScreen> {
       _isLoading = true;
     });
 
+    // Static coach login for testing
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email == 'coach@coach.com' && password == 'coachcoach') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Welcome back, Coach!'),
+            backgroundColor: context.accentOrange,
+          ),
+        );
+        Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+      }
+      return;
+    }
+
     try {
       final loginRequest = LoginRequest(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+        email: email,
+        password: password,
       );
 
       final authResponse = await _authService.login(loginRequest);
@@ -80,8 +97,12 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
         );
 
-        // Navigate to home
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        // Navigate based on role
+        if (authResponse.user.role == 'coach') {
+          Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
       }
     } catch (e) {
       if (mounted) {

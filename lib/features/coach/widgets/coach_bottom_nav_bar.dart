@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_text_styles.dart';
-import '../core/extensions/theme_context.dart';
+import '../../../core/constants/app_text_styles.dart';
+import '../../../core/extensions/theme_context.dart';
 
-class BottomNavBar extends StatelessWidget {
+class CoachBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const BottomNavBar({
+  const CoachBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
@@ -32,30 +32,30 @@ class BottomNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
-                icon: Icons.home_outlined,
-                selectedIcon: Icons.home,
-                label: 'Home',
+                icon: Icons.dashboard_outlined,
+                selectedIcon: Icons.dashboard,
+                label: 'War Room',
                 isSelected: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavItem(
-                icon: Icons.explore_outlined,
-                selectedIcon: Icons.explore,
-                label: 'Explore',
+                icon: Icons.draw_outlined,
+                selectedIcon: Icons.draw,
+                label: 'Tactics',
                 isSelected: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               _NavItem(
                 icon: Icons.sports_soccer_outlined,
                 selectedIcon: Icons.sports_soccer,
-                label: 'Bet',
+                label: 'Live',
                 isSelected: currentIndex == 2,
                 onTap: () => onTap(2),
               ),
               _NavItem(
-                icon: Icons.account_balance_wallet_outlined,
-                selectedIcon: Icons.account_balance_wallet,
-                label: 'Wallet',
+                icon: Icons.psychology_outlined,
+                selectedIcon: Icons.psychology,
+                label: 'AI Lab',
                 isSelected: currentIndex == 3,
                 onTap: () => onTap(3),
               ),
@@ -102,7 +102,7 @@ class _NavItem extends StatelessWidget {
             Icon(
               isSelected ? selectedIcon : icon,
               size: 22,
-              color: isSelected ? context.accent : context.iconInactive,
+              color: isSelected ? context.accentOrange : context.iconInactive,
             ),
             const SizedBox(height: 2),
             Text(
@@ -110,7 +110,7 @@ class _NavItem extends StatelessWidget {
               style: AppTextStyles.caption.copyWith(
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? context.accent : context.iconInactive,
+                color: isSelected ? context.accentOrange : context.iconInactive,
               ),
             ),
           ],

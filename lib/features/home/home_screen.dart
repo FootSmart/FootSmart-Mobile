@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/constants/app_colors.dart';
@@ -38,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _leaguesLoading = true;
   bool _matchesLoading = true;
   String? _matchesError;
+  final Completer<void> _leaguesCompleter = Completer<void>();
 
   @override
   void initState() {
@@ -65,6 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (_) {
       if (mounted) setState(() => _leaguesLoading = false);
+    } finally {
+      if (!_leaguesCompleter.isCompleted) _leaguesCompleter.complete();
     }
   }
 
@@ -78,10 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final List<FootballMatch> featuredMatches = [];
 
-      // Wait for leagues to load first
-      while (_leaguesLoading) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
+      // Wait for leagues to load using Completer (no polling)
+      await _leaguesCompleter.future;
 
       // Fetch 1 match from each top league
       for (final league in _topLeagues) {

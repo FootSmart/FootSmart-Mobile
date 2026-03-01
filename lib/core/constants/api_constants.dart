@@ -4,7 +4,7 @@ class ApiConstants {
 
   // Base URL - For Android emulator use 10.0.2.2, for iOS simulator use localhost
   // For physical device, use your computer's actual IP address
-  static const String baseUrl = 'http://10.0.2.2:3001';
+  static const String baseUrl = 'http://192.168.1.189:3001';
 
   // API Version
   static const String apiVersion = 'v1';
@@ -41,6 +41,8 @@ class ApiConstants {
   static String teamStats(String id) => '/teams/$id/stats';
   static String leagueTopScorers(String leagueId) =>
       '/teams/league/$leagueId/top-scorers';
+  static String playerStats(String playerId) =>
+      '/teams/players/$playerId/stats';
 
   // ─── Matches ─────────────────────────────────────────────────────────────
   static const String matches = '/matches';

@@ -11,6 +11,7 @@ class Player {
   final int? heightCm;
   final int? weightKg;
   final int? shirtNumber;
+  final String? photoUrl;
   final int appearances;
   final int minutesPlayed;
   final int goals;
@@ -33,6 +34,7 @@ class Player {
     this.heightCm,
     this.weightKg,
     this.shirtNumber,
+    this.photoUrl,
     this.appearances = 0,
     this.minutesPlayed = 0,
     this.goals = 0,
@@ -58,6 +60,7 @@ class Player {
         heightCm: json['heightCm'] as int?,
         weightKg: json['weightKg'] as int?,
         shirtNumber: json['shirtNumber'] as int?,
+        photoUrl: json['photoUrl'] as String?,
         appearances: json['appearances'] as int? ?? 0,
         minutesPlayed: json['minutesPlayed'] as int? ?? 0,
         goals: json['goals'] as int? ?? 0,
@@ -85,6 +88,7 @@ class Player {
         'heightCm': heightCm,
         'weightKg': weightKg,
         'shirtNumber': shirtNumber,
+        'photoUrl': photoUrl,
         'appearances': appearances,
         'minutesPlayed': minutesPlayed,
         'goals': goals,
@@ -104,4 +108,68 @@ class Player {
 
   @override
   String toString() => 'Player($name, #$shirtNumber, $position)';
+}
+
+/// Detailed player stats from v_player_stats view
+class PlayerStats {
+  final String playerId;
+  final String playerName;
+  final String? position;
+  final String? nationality;
+  final int? age;
+  final int? shirtNumber;
+  final String? teamName;
+  final String? league;
+  final int? season;
+  final int appearances;
+  final int minutesPlayed;
+  final int goals;
+  final int assists;
+  final int goalContributions;
+  final int yellowCards;
+  final int redCards;
+  final double goalsPerGame;
+  final double goalsPer90;
+
+  const PlayerStats({
+    required this.playerId,
+    required this.playerName,
+    this.position,
+    this.nationality,
+    this.age,
+    this.shirtNumber,
+    this.teamName,
+    this.league,
+    this.season,
+    this.appearances = 0,
+    this.minutesPlayed = 0,
+    this.goals = 0,
+    this.assists = 0,
+    this.goalContributions = 0,
+    this.yellowCards = 0,
+    this.redCards = 0,
+    this.goalsPerGame = 0,
+    this.goalsPer90 = 0,
+  });
+
+  factory PlayerStats.fromJson(Map<String, dynamic> json) => PlayerStats(
+        playerId: json['playerId'] as String,
+        playerName: json['playerName'] as String,
+        position: json['position'] as String?,
+        nationality: json['nationality'] as String?,
+        age: json['age'] as int?,
+        shirtNumber: json['shirtNumber'] as int?,
+        teamName: json['teamName'] as String?,
+        league: json['league'] as String?,
+        season: json['season'] as int?,
+        appearances: json['appearances'] as int? ?? 0,
+        minutesPlayed: json['minutesPlayed'] as int? ?? 0,
+        goals: json['goals'] as int? ?? 0,
+        assists: json['assists'] as int? ?? 0,
+        goalContributions: json['goalContributions'] as int? ?? 0,
+        yellowCards: json['yellowCards'] as int? ?? 0,
+        redCards: json['redCards'] as int? ?? 0,
+        goalsPerGame: (json['goalsPerGame'] as num?)?.toDouble() ?? 0,
+        goalsPer90: (json['goalsPer90'] as num?)?.toDouble() ?? 0,
+      );
 }

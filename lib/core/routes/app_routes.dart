@@ -14,6 +14,15 @@ import 'package:footsmart_pro/features/splash/splash_screen.dart';
 import 'package:footsmart_pro/features/wallet/wallet_screen.dart';
 import 'package:footsmart_pro/core/models/match.dart';
 
+// Coach screens
+import 'package:footsmart_pro/features/coach/screens/coach_home_screen.dart';
+import 'package:footsmart_pro/features/coach/screens/coach_tactics_screen.dart';
+import 'package:footsmart_pro/features/coach/screens/coach_opponent_screen.dart';
+import 'package:footsmart_pro/features/coach/screens/coach_what_if_screen.dart';
+import 'package:footsmart_pro/features/coach/screens/coach_perfect_player_screen.dart';
+import 'package:footsmart_pro/features/coach/screens/coach_live_console_screen.dart';
+import 'package:footsmart_pro/features/coach/screens/coach_broadcast_screen.dart';
+
 class AppRoutes {
   AppRoutes._();
 
@@ -30,6 +39,15 @@ class AppRoutes {
   static const String wallet = '/app/wallet';
   static const String profile = '/app/profile';
   static const String matchDetail = '/match-detail';
+
+  // Coach routes
+  static const String coachHome = '/coach-home';
+  static const String coachTactics = '/coach-tactics';
+  static const String coachOpponent = '/coach-opponent';
+  static const String coachWhatIf = '/coach-what-if';
+  static const String coachPerfectPlayer = '/coach-perfect-player';
+  static const String coachLiveConsole = '/coach-live-console';
+  static const String coachBroadcast = '/coach-broadcast';
 
   static Map<String, WidgetBuilder> get routes => {
         splash: (context) => const SplashScreen(),
@@ -49,5 +67,14 @@ class AppRoutes {
               ModalRoute.of(context)!.settings.arguments as FootballMatch;
           return MatchDetailScreen(match: match);
         },
+
+        // Coach routes
+        coachHome: (context) => const CoachHomeScreen(),
+        coachTactics: (context) => const CoachTacticsScreen(),
+        coachOpponent: (context) => const CoachOpponentScreen(),
+        coachWhatIf: (context) => const CoachWhatIfScreen(),
+        coachPerfectPlayer: (context) => const CoachPerfectPlayerScreen(),
+        coachLiveConsole: (context) => const CoachLiveConsoleScreen(),
+        coachBroadcast: (context) => const CoachBroadcastScreen(),
       };
 }

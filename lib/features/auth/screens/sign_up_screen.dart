@@ -22,11 +22,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _confirmPasswordController = TextEditingController();
   final _dateOfBirthController = TextEditingController();
 
-  String _selectedRole = 'player'; // Default role
+  String _selectedRole = 'bettor'; // Default role
+  final _clubNameController = TextEditingController();
+  final _teamCategoryController = TextEditingController();
   bool _isAgeConfirmed = false;
   bool _isTermsAccepted = false;
   bool _isLoading = false;
   late final AuthService _authService;
+
+  final List<String> _teamCategories = [
+    'U13',
+    'U15',
+    'U17',
+    'U18',
+    'U21',
+    'Senior',
+    'Women',
+  ];
 
   @override
   void initState() {
@@ -41,6 +53,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _dateOfBirthController.dispose();
+    _clubNameController.dispose();
+    _teamCategoryController.dispose();
     super.dispose();
   }
 
@@ -168,8 +182,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         );
 
-        // Navigate to home
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        // Navigate based on role
+        if (_selectedRole == 'coach') {
+          Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -586,7 +604,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           child: InkWell(
                             onTap: () {
                               setState(() {
-                                _selectedRole = 'player';
+                                _selectedRole = 'bettor';
                               });
                             },
                             child: Container(
@@ -595,29 +613,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 vertical: 16,
                               ),
                               decoration: BoxDecoration(
-                                color: _selectedRole == 'player'
+                                color: _selectedRole == 'bettor'
                                     ? context.accent.withValues(alpha: 0.15)
                                     : context.inputBg,
                                 border: Border.all(
-                                  color: _selectedRole == 'player'
+                                  color: _selectedRole == 'bettor'
                                       ? context.accent
                                       : context.borderColor,
-                                  width: _selectedRole == 'player' ? 2 : 1.5,
+                                  width: _selectedRole == 'bettor' ? 2 : 1.5,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Center(
-                                child: Text(
-                                  'Player',
-                                  style: AppTextStyles.buttonMedium.copyWith(
-                                    color: _selectedRole == 'player'
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.sports_soccer,
+                                    color: _selectedRole == 'bettor'
                                         ? context.accent
                                         : context.textSecondary,
-                                    fontWeight: _selectedRole == 'player'
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                                    size: 24,
                                   ),
-                                ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Bettor',
+                                    style: AppTextStyles.buttonMedium.copyWith(
+                                      color: _selectedRole == 'bettor'
+                                          ? context.accent
+                                          : context.textSecondary,
+                                      fontWeight: _selectedRole == 'bettor'
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -637,28 +665,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: _selectedRole == 'coach'
-                                    ? context.accent.withValues(alpha: 0.15)
+                                    ? context.accentOrange
+                                        .withValues(alpha: 0.15)
                                     : context.inputBg,
                                 border: Border.all(
                                   color: _selectedRole == 'coach'
-                                      ? context.accent
+                                      ? context.accentOrange
                                       : context.borderColor,
                                   width: _selectedRole == 'coach' ? 2 : 1.5,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Center(
-                                child: Text(
-                                  'Coach',
-                                  style: AppTextStyles.buttonMedium.copyWith(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.sports,
                                     color: _selectedRole == 'coach'
-                                        ? context.accent
+                                        ? context.accentOrange
                                         : context.textSecondary,
-                                    fontWeight: _selectedRole == 'coach'
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                                    size: 24,
                                   ),
-                                ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Coach',
+                                    style: AppTextStyles.buttonMedium.copyWith(
+                                      color: _selectedRole == 'coach'
+                                          ? context.accentOrange
+                                          : context.textSecondary,
+                                      fontWeight: _selectedRole == 'coach'
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -667,6 +706,142 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ],
                 ),
+
+                // Coach-specific fields
+                if (_selectedRole == 'coach') ...[
+                  const SizedBox(height: 20),
+
+                  // Club Name field
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'Club / Team Name',
+                          style: AppTextStyles.inputLabel.copyWith(
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ),
+                      TextFormField(
+                        controller: _clubNameController,
+                        keyboardType: TextInputType.text,
+                        validator: _selectedRole == 'coach'
+                            ? (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Club name is required for coaches';
+                                }
+                                return null;
+                              }
+                            : null,
+                        style: AppTextStyles.inputText.copyWith(
+                          color: context.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. FC Barcelona Youth',
+                          hintStyle: AppTextStyles.inputHint.copyWith(
+                            color: context.textHint,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.shield_outlined,
+                            color: context.iconInactive,
+                          ),
+                          filled: true,
+                          fillColor: context.inputBg,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: context.borderColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: context.borderColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: context.accentOrange,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Team Category
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'Team Category',
+                          style: AppTextStyles.inputLabel.copyWith(
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _teamCategories.map((cat) {
+                          final isSelected =
+                              _teamCategoryController.text == cat;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _teamCategoryController.text = cat;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? context.accentOrange
+                                        .withValues(alpha: 0.15)
+                                    : context.inputBg,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? context.accentOrange
+                                      : context.borderColor,
+                                  width: isSelected ? 2 : 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                cat,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: isSelected
+                                      ? context.accentOrange
+                                      : context.textSecondary,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ],
 
                 const SizedBox(height: 24),
 
