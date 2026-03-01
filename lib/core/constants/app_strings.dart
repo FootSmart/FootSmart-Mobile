@@ -11,17 +11,17 @@ class AppStrings {
   static const String responsibleGambling = 'Please gamble responsibly';
 
   // Onboarding
-  static const String onboardingTitle1 = 'Smart Analytics';
+  static const String onboardingTitle1 = 'Football Analytics';
   static const String onboardingDesc1 =
-      'Advanced AI-powered football analytics to help you make informed betting decisions.';
+      'AI-powered match analysis, team stats, and player insights to give you the edge before every match.';
 
-  static const String onboardingTitle2 = 'Secure Betting';
+  static const String onboardingTitle2 = 'Smart Betting';
   static const String onboardingDesc2 =
-      'Bank-level encryption and secure payment processing. Your money is safe with us.';
+      'Real-time odds, risk meter, and data-driven predictions. Make smarter bets backed by analytics.';
 
-  static const String onboardingTitle3 = 'Responsible Gaming';
+  static const String onboardingTitle3 = '18+ Only';
   static const String onboardingDesc3 =
-      'Set limits, track spending, and access support tools to maintain healthy betting habits.';
+      'This app is for adults only. Set personal limits, track your activity, and bet responsibly.';
 
   // Auth
   static const String signIn = 'Sign In';

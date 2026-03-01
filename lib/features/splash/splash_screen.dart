@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
-import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/constants/app_strings.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
@@ -218,19 +217,17 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-/// Custom Logo Widget matching the uploaded image design
-/// Green rounded square with concentric circles (target icon)
+/// Custom Logo Widget using the app logo asset
 class _LogoWidget extends StatelessWidget {
   const _LogoWidget();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120,
-      height: 120,
+      width: 140,
+      height: 140,
       decoration: BoxDecoration(
-        color: AppColors.accentGreen,
-        borderRadius: BorderRadius.circular(28),
+        shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
             color: context.accent.withValues(alpha: 0.3),
@@ -240,41 +237,14 @@ class _LogoWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: CustomPaint(
-          size: const Size(60, 60),
-          painter: _ConcentricCirclesPainter(),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/icons/logorb.png',
+          width: 140,
+          height: 140,
+          fit: BoxFit.cover,
         ),
       ),
     );
   }
-}
-
-/// Custom painter for concentric circles target icon
-class _ConcentricCirclesPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.primaryDark
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5;
-
-    final center = Offset(size.width / 2, size.height / 2);
-
-    // Draw outer circle
-    canvas.drawCircle(center, size.width * 0.45, paint);
-
-    // Draw middle circle
-    canvas.drawCircle(center, size.width * 0.30, paint);
-
-    // Draw inner circle (filled)
-    final fillPaint = Paint()
-      ..color = AppColors.primaryDark
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(center, size.width * 0.15, fillPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

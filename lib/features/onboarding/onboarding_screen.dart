@@ -1,3 +1,4 @@
+import 'dart:math' show cos, sin;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
@@ -19,25 +20,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
-      iconWidget: const _AnalyticsIcon(),
+      iconWidget: const _FootballAnalyticsIcon(),
       iconColor: AppColors.accentGreen,
       title: AppStrings.onboardingTitle1,
       description: AppStrings.onboardingDesc1,
       buttonText: 'Continue',
     ),
     OnboardingPage(
-      iconWidget: const _SecurityIcon(),
+      iconWidget: const _BettingIcon(),
       iconColor: AppColors.accentOrange,
       title: AppStrings.onboardingTitle2,
       description: AppStrings.onboardingDesc2,
       buttonText: 'Continue',
     ),
     OnboardingPage(
-      iconWidget: const _HeartIcon(),
-      iconColor: AppColors.accentGreen,
+      iconWidget: const _AgeRestrictionIcon(),
+      iconColor: AppColors.error,
       title: AppStrings.onboardingTitle3,
       description: AppStrings.onboardingDesc3,
-      buttonText: 'Get Started',
+      buttonText: 'I\'m 18+ — Get Started',
     ),
   ];
 
@@ -272,20 +273,20 @@ class OnboardingPage {
   });
 }
 
-// Custom Analytics Icon (Bar Chart)
-class _AnalyticsIcon extends StatelessWidget {
-  const _AnalyticsIcon();
+// Custom Football Analytics Icon (Soccer ball + chart)
+class _FootballAnalyticsIcon extends StatelessWidget {
+  const _FootballAnalyticsIcon();
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
       size: const Size(50, 50),
-      painter: _AnalyticsIconPainter(),
+      painter: _FootballAnalyticsIconPainter(),
     );
   }
 }
 
-class _AnalyticsIconPainter extends CustomPainter {
+class _FootballAnalyticsIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -294,55 +295,48 @@ class _AnalyticsIconPainter extends CustomPainter {
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
-    // Base line
+    // Soccer ball circle
+    canvas.drawCircle(
+      Offset(size.width * 0.35, size.height * 0.55),
+      size.width * 0.25,
+      paint,
+    );
+
+    // Pentagon on ball
+    final pentPath = Path();
+    final cx = size.width * 0.35;
+    final cy = size.height * 0.55;
+    final r = size.width * 0.12;
+    for (int i = 0; i < 5; i++) {
+      final angle = -1.5708 + (i * 6.2832 / 5);
+      final x = cx + r * cos(angle);
+      final y = cy + r * sin(angle);
+      if (i == 0)
+        pentPath.moveTo(x, y);
+      else
+        pentPath.lineTo(x, y);
+    }
+    pentPath.close();
+    paint.strokeWidth = 1.5;
+    canvas.drawPath(pentPath, paint);
+
+    // Trend arrow going up
+    paint.strokeWidth = 3;
+    final arrowPath = Path()
+      ..moveTo(size.width * 0.55, size.height * 0.7)
+      ..lineTo(size.width * 0.7, size.height * 0.4)
+      ..lineTo(size.width * 0.85, size.height * 0.25);
+    canvas.drawPath(arrowPath, paint);
+
+    // Arrow head
     canvas.drawLine(
-      Offset(size.width * 0.15, size.height * 0.85),
-      Offset(size.width * 0.85, size.height * 0.85),
+      Offset(size.width * 0.85, size.height * 0.25),
+      Offset(size.width * 0.75, size.height * 0.25),
       paint,
     );
-
-    // Vertical bars (3 bars with different heights)
-    paint.style = PaintingStyle.fill;
-
-    // Bar 1 (shortest)
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          size.width * 0.2,
-          size.height * 0.65,
-          size.width * 0.12,
-          size.height * 0.2,
-        ),
-        const Radius.circular(3),
-      ),
-      paint,
-    );
-
-    // Bar 2 (tallest)
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          size.width * 0.44,
-          size.height * 0.35,
-          size.width * 0.12,
-          size.height * 0.5,
-        ),
-        const Radius.circular(3),
-      ),
-      paint,
-    );
-
-    // Bar 3 (medium)
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          size.width * 0.68,
-          size.height * 0.5,
-          size.width * 0.12,
-          size.height * 0.35,
-        ),
-        const Radius.circular(3),
-      ),
+    canvas.drawLine(
+      Offset(size.width * 0.85, size.height * 0.25),
+      Offset(size.width * 0.85, size.height * 0.35),
       paint,
     );
   }
@@ -351,20 +345,20 @@ class _AnalyticsIconPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// Custom Security Icon (Shield)
-class _SecurityIcon extends StatelessWidget {
-  const _SecurityIcon();
+// Custom Betting Icon (Ticket / Odds)
+class _BettingIcon extends StatelessWidget {
+  const _BettingIcon();
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
       size: const Size(50, 50),
-      painter: _SecurityIconPainter(),
+      painter: _BettingIconPainter(),
     );
   }
 }
 
-class _SecurityIconPainter extends CustomPainter {
+class _BettingIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -374,99 +368,105 @@ class _SecurityIconPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final path = Path();
+    // Betting ticket shape
+    final ticketPath = Path();
+    ticketPath.moveTo(size.width * 0.15, size.height * 0.15);
+    ticketPath.lineTo(size.width * 0.85, size.height * 0.15);
+    ticketPath.lineTo(size.width * 0.85, size.height * 0.85);
+    ticketPath.lineTo(size.width * 0.15, size.height * 0.85);
+    ticketPath.close();
+    canvas.drawPath(ticketPath, paint);
 
-    // Shield shape
-    path.moveTo(size.width * 0.5, size.height * 0.1);
-    path.lineTo(size.width * 0.2, size.height * 0.25);
-    path.lineTo(size.width * 0.2, size.height * 0.55);
-    path.quadraticBezierTo(
-      size.width * 0.2,
-      size.height * 0.75,
-      size.width * 0.5,
-      size.height * 0.9,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.8,
-      size.height * 0.75,
-      size.width * 0.8,
-      size.height * 0.55,
-    );
-    path.lineTo(size.width * 0.8, size.height * 0.25);
-    path.close();
+    // Dashed line in middle
+    for (double i = 0.25; i < 0.85; i += 0.1) {
+      canvas.drawLine(
+        Offset(size.width * i, size.height * 0.5),
+        Offset(size.width * (i + 0.05), size.height * 0.5),
+        paint..strokeWidth = 2,
+      );
+    }
+    paint.strokeWidth = 3;
 
-    canvas.drawPath(path, paint);
+    // Odds text lines
+    canvas.drawLine(
+      Offset(size.width * 0.25, size.height * 0.32),
+      Offset(size.width * 0.55, size.height * 0.32),
+      paint..strokeWidth = 2.5,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.25, size.height * 0.68),
+      Offset(size.width * 0.55, size.height * 0.68),
+      paint,
+    );
+
+    // Checkmark on right
+    paint.strokeWidth = 3;
+    paint.color = AppColors.accentOrange;
+    canvas.drawLine(
+      Offset(size.width * 0.6, size.height * 0.65),
+      Offset(size.width * 0.68, size.height * 0.73),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.68, size.height * 0.73),
+      Offset(size.width * 0.78, size.height * 0.58),
+      paint,
+    );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// Custom Heart Icon (Responsible Gaming)
-class _HeartIcon extends StatelessWidget {
-  const _HeartIcon();
+// Custom 18+ Age Restriction Icon
+class _AgeRestrictionIcon extends StatelessWidget {
+  const _AgeRestrictionIcon();
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
       size: const Size(50, 50),
-      painter: _HeartIconPainter(),
+      painter: _AgeRestrictionIconPainter(),
     );
   }
 }
 
-class _HeartIconPainter extends CustomPainter {
+class _AgeRestrictionIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.accentGreen
+    // Outer circle
+    final circlePaint = Paint()
+      ..color = AppColors.error
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
+      ..strokeWidth = 3.5;
 
-    final path = Path();
-
-    // Heart shape
-    path.moveTo(size.width * 0.5, size.height * 0.35);
-
-    // Left curve
-    path.cubicTo(
-      size.width * 0.3,
-      size.height * 0.2,
-      size.width * 0.1,
-      size.height * 0.3,
-      size.width * 0.1,
-      size.height * 0.5,
-    );
-    path.cubicTo(
-      size.width * 0.1,
-      size.height * 0.7,
-      size.width * 0.5,
-      size.height * 0.85,
-      size.width * 0.5,
-      size.height * 0.85,
+    canvas.drawCircle(
+      Offset(size.width / 2, size.height / 2),
+      size.width * 0.42,
+      circlePaint,
     );
 
-    // Right curve
-    path.cubicTo(
-      size.width * 0.5,
-      size.height * 0.85,
-      size.width * 0.9,
-      size.height * 0.7,
-      size.width * 0.9,
-      size.height * 0.5,
+    // "18+" text
+    final textPainter = TextPainter(
+      text: const TextSpan(
+        text: '18+',
+        style: TextStyle(
+          color: AppColors.error,
+          fontSize: 16,
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.5,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
     );
-    path.cubicTo(
-      size.width * 0.9,
-      size.height * 0.3,
-      size.width * 0.7,
-      size.height * 0.2,
-      size.width * 0.5,
-      size.height * 0.35,
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size.width - textPainter.width) / 2,
+        (size.height - textPainter.height) / 2,
+      ),
     );
-
-    canvas.drawPath(path, paint);
   }
 
   @override
