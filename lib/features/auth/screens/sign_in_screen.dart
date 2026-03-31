@@ -21,6 +21,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
   late final AuthService _authService;
 
   @override
@@ -272,7 +273,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       validator: _validatePassword,
                       style: AppTextStyles.inputText.copyWith(
                         color: context.textPrimary,
@@ -284,9 +285,18 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                         filled: true,
                         fillColor: context.inputBg,
-                        suffixIcon: Icon(
-                          Icons.visibility_off_outlined,
-                          color: context.iconInactive,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: context.iconInactive,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,

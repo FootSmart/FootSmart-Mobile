@@ -10,6 +10,14 @@ import 'package:footsmart_pro/features/home/home_screen.dart';
 import 'package:footsmart_pro/features/match/match_detail_screen.dart';
 import 'package:footsmart_pro/features/onboarding/onboarding_screen.dart';
 import 'package:footsmart_pro/features/profile/profile_screen.dart';
+import 'package:footsmart_pro/features/profile/screens/personal_information_screen.dart';
+import 'package:footsmart_pro/features/profile/screens/verification_status_screen.dart';
+import 'package:footsmart_pro/features/profile/screens/notifications_screen.dart';
+import 'package:footsmart_pro/features/profile/screens/payment_methods_screen.dart';
+import 'package:footsmart_pro/features/profile/screens/betting_history_screen.dart';
+import 'package:footsmart_pro/features/profile/screens/responsible_gambling_screen.dart';
+import 'package:footsmart_pro/features/profile/screens/help_support_screen.dart';
+import 'package:footsmart_pro/features/profile/screens/settings_screen.dart';
 import 'package:footsmart_pro/features/splash/splash_screen.dart';
 import 'package:footsmart_pro/features/wallet/wallet_screen.dart';
 import 'package:footsmart_pro/core/models/match.dart';
@@ -38,6 +46,14 @@ class AppRoutes {
   static const String betting = '/betting';
   static const String wallet = '/app/wallet';
   static const String profile = '/app/profile';
+  static const String profileInfo = '/app/profile/info';
+  static const String kyc = '/app/kyc';
+  static const String notifications = '/app/notifications';
+  static const String paymentMethods = '/app/payment-methods';
+  static const String bettingHistory = '/app/profile/history';
+  static const String responsibleGambling = '/app/responsible-gambling';
+  static const String support = '/app/support';
+  static const String settings = '/app/settings';
   static const String matchDetail = '/match-detail';
 
   // Coach routes
@@ -62,6 +78,14 @@ class AppRoutes {
         betting: (context) => const BettingScreen(),
         wallet: (context) => const WalletScreen(),
         profile: (context) => const ProfileScreen(),
+        profileInfo: (context) => const PersonalInformationScreen(),
+        kyc: (context) => const VerificationStatusScreen(),
+        notifications: (context) => const NotificationsScreen(),
+        paymentMethods: (context) => const PaymentMethodsScreen(),
+        bettingHistory: (context) => const BettingHistoryScreen(),
+        responsibleGambling: (context) => const ResponsibleGamblingScreen(),
+        support: (context) => const HelpSupportScreen(),
+        settings: (context) => const SettingsScreen(),
         matchDetail: (context) {
           final match =
               ModalRoute.of(context)!.settings.arguments as FootballMatch;

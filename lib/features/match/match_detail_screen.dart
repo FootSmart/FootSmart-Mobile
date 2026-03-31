@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/extensions/theme_context.dart';
+import '../../core/models/bet.dart';
 import '../../core/models/match.dart';
 import '../../core/models/team.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/bet_service.dart';
 import '../../core/services/match_service.dart';
 import '../../core/services/team_service.dart';
 
@@ -21,15 +23,19 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
     with SingleTickerProviderStateMixin {
   late final MatchService _matchService;
   late final TeamService _teamService;
+  late final BetService _betService;
   late final TabController _tabController;
 
   TeamForm? _homeForm;
   TeamForm? _awayForm;
   TeamStats? _homeStats;
   TeamStats? _awayStats;
+  MatchOdds? _matchOdds;
 
   bool _isLoading = true;
+  bool _isOddsLoading = true;
   String? _error;
+  String? _oddsError;
 
   @override
   void initState() {
@@ -38,6 +44,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
     final api = ApiService();
     _matchService = MatchService(api);
     _teamService = TeamService(api);
+    _betService = BetService(api);
     _loadData();
   }
 
@@ -48,6 +55,14 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
   }
 
   Future<void> _loadData() async {
+    TeamForm? homeForm;
+    TeamForm? awayForm;
+    TeamStats? homeStats;
+    TeamStats? awayStats;
+    MatchOdds? matchOdds;
+    String? screenError;
+    String? oddsError;
+
     try {
       final homeId = widget.match.homeTeam.id;
       final awayId = widget.match.awayTeam.id;
@@ -58,24 +73,86 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
         _teamService.getTeamStats(homeId),
         _teamService.getTeamStats(awayId),
       ]);
-
-      if (mounted) {
-        setState(() {
-          _homeForm = results[0] as TeamForm;
-          _awayForm = results[1] as TeamForm;
-          _homeStats = results[2] as TeamStats;
-          _awayStats = results[3] as TeamStats;
-          _isLoading = false;
-        });
-      }
+      homeForm = results[0] as TeamForm;
+      awayForm = results[1] as TeamForm;
+      homeStats = results[2] as TeamStats;
+      awayStats = results[3] as TeamStats;
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
-      }
+      screenError = e.toString();
     }
+
+    try {
+      matchOdds = await _betService.getMatchOdds(widget.match.id);
+    } catch (e) {
+      oddsError = e.toString();
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _homeForm = homeForm;
+      _awayForm = awayForm;
+      _homeStats = homeStats;
+      _awayStats = awayStats;
+      _matchOdds = matchOdds;
+      _error = screenError;
+      _oddsError = oddsError;
+      _isLoading = false;
+      _isOddsLoading = false;
+    });
+  }
+
+  Future<void> _openBetSheet() async {
+    final odds = _matchOdds;
+    if (odds == null || !widget.match.isScheduled) return;
+
+    final placedBet = await showModalBottomSheet<PlaceBetResult>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (_) => _BetPlacementSheet(
+        odds: odds,
+        onSubmit: (selection, stake) {
+          return _betService.placeBet(
+            matchId: widget.match.id,
+            selection: selection,
+            stake: stake,
+          );
+        },
+      ),
+    );
+
+    if (!mounted || placedBet == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.success,
+        content: Text(
+          'Bet placed: ${placedBet.bet.selectionLabel} • Remaining balance ${placedBet.balanceAfter.toStringAsFixed(2)} USD',
+        ),
+      ),
+    );
+  }
+
+  void _retryAllData() {
+    setState(() {
+      _isLoading = true;
+      _isOddsLoading = true;
+      _error = null;
+      _oddsError = null;
+    });
+    _loadData();
+  }
+
+  String _shortOddsError(String? error) {
+    if (error == null || error.isEmpty) return 'Odds are not available yet.';
+    if (error.toLowerCase().contains('404') ||
+        error.toLowerCase().contains('no odds')) {
+      return 'Odds are not available yet.';
+    }
+    return 'Could not load odds right now.';
   }
 
   @override
@@ -117,6 +194,13 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
         children: [
           // ── Match header card ─────────────────────────────────────────────
           _MatchHeaderCard(match: match),
+          _OddsActionCard(
+            match: match,
+            odds: _matchOdds,
+            isLoading: _isOddsLoading,
+            infoText: _shortOddsError(_oddsError),
+            onBetTap: _openBetSheet,
+          ),
           const SizedBox(height: 8),
           // ── Tabs ──────────────────────────────────────────────────────────
           Expanded(
@@ -127,13 +211,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                 : _error != null
                     ? _ErrorView(
                         error: _error!,
-                        onRetry: () {
-                          setState(() {
-                            _isLoading = true;
-                            _error = null;
-                          });
-                          _loadData();
-                        },
+                        onRetry: _retryAllData,
                       )
                     : TabBarView(
                         controller: _tabController,
@@ -950,6 +1028,567 @@ class _StatRow extends StatelessWidget {
   }
 }
 
+typedef _PlaceBetCallback = Future<PlaceBetResult> Function(
+  BetSelection selection,
+  double stake,
+);
+
+class _OddsActionCard extends StatelessWidget {
+  final FootballMatch match;
+  final MatchOdds? odds;
+  final bool isLoading;
+  final String infoText;
+  final VoidCallback onBetTap;
+
+  const _OddsActionCard({
+    required this.match,
+    required this.odds,
+    required this.isLoading,
+    required this.infoText,
+    required this.onBetTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderSubtle, width: 1),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_fire_department,
+                  size: 16, color: context.accent),
+              const SizedBox(width: 6),
+              Text(
+                'Quick Bet',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                match.isScheduled ? 'Open' : 'Closed',
+                style: AppTextStyles.caption.copyWith(
+                  color:
+                      match.isScheduled ? AppColors.success : AppColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (isLoading)
+            SizedBox(
+              height: 40,
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.accent,
+                  ),
+                ),
+              ),
+            )
+          else if (odds == null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                infoText,
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: context.textSecondary),
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: _OddsChip(
+                    label: odds!.homeTeam,
+                    odd: odds!.homeOdds,
+                    prob: odds!.homeProb,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _OddsChip(
+                    label: 'Draw',
+                    odd: odds!.drawOdds,
+                    prob: odds!.drawProb,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _OddsChip(
+                    label: odds!.awayTeam,
+                    odd: odds!.awayOdds,
+                    prob: odds!.awayProb,
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: match.isScheduled && !isLoading && odds != null
+                  ? onBetTap
+                  : null,
+              icon: const Icon(Icons.sports_score_rounded, size: 18),
+              label: Text(
+                match.isScheduled ? 'Bet On This Match' : 'Betting Closed',
+                style: AppTextStyles.buttonMedium,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.accent,
+                foregroundColor: AppColors.primaryDark,
+                disabledBackgroundColor: context.surfaceBg,
+                disabledForegroundColor: context.textSecondary,
+                minimumSize: const Size.fromHeight(44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OddsChip extends StatelessWidget {
+  final String label;
+  final double odd;
+  final double prob;
+
+  const _OddsChip({
+    required this.label,
+    required this.odd,
+    required this.prob,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.surfaceBg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption.copyWith(
+              color: context.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            odd.toStringAsFixed(2),
+            style: AppTextStyles.h4.copyWith(
+              color: context.accent,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${prob.toStringAsFixed(1)}%',
+            style: AppTextStyles.caption.copyWith(
+              color: context.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BetPlacementSheet extends StatefulWidget {
+  final MatchOdds odds;
+  final _PlaceBetCallback onSubmit;
+
+  const _BetPlacementSheet({required this.odds, required this.onSubmit});
+
+  @override
+  State<_BetPlacementSheet> createState() => _BetPlacementSheetState();
+}
+
+class _BetPlacementSheetState extends State<_BetPlacementSheet> {
+  final List<double> _quickStakes = const [5, 10, 20, 50, 100];
+  late final TextEditingController _stakeController;
+
+  BetSelection _selected = BetSelection.home;
+  double _stake = 10;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _stakeController = TextEditingController(text: _stake.toStringAsFixed(0));
+  }
+
+  @override
+  void dispose() {
+    _stakeController.dispose();
+    super.dispose();
+  }
+
+  double get _selectedOdds => widget.odds.oddsFor(_selected);
+  double get _potentialPayout => _stake * _selectedOdds;
+
+  void _setQuickStake(double amount) {
+    setState(() {
+      _stake = amount;
+      _stakeController.text = amount.toStringAsFixed(0);
+    });
+  }
+
+  void _onStakeChanged(String value) {
+    final parsed = double.tryParse(value);
+    if (parsed == null || parsed < 0) {
+      setState(() => _stake = 0);
+      return;
+    }
+    setState(() => _stake = parsed);
+  }
+
+  Future<void> _submit() async {
+    if (_stake <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid stake amount.')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final result = await widget.onSubmit(_selected, _stake);
+      if (!mounted) return;
+      Navigator.of(context).pop(result);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 18,
+        right: 18,
+        top: 14,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+      ),
+      decoration: BoxDecoration(
+        color: context.scaffoldBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.borderSubtle,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '${widget.odds.homeTeam} vs ${widget.odds.awayTeam}',
+            style: AppTextStyles.h3.copyWith(
+              color: context.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Pick your outcome and stake',
+            style:
+                AppTextStyles.bodySmall.copyWith(color: context.textSecondary),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _SelectionOptionCard(
+                  label: widget.odds.homeTeam,
+                  odd: widget.odds.homeOdds,
+                  probability: widget.odds.homeProb,
+                  selected: _selected == BetSelection.home,
+                  onTap: () => setState(() => _selected = BetSelection.home),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _SelectionOptionCard(
+                  label: 'Draw',
+                  odd: widget.odds.drawOdds,
+                  probability: widget.odds.drawProb,
+                  selected: _selected == BetSelection.draw,
+                  onTap: () => setState(() => _selected = BetSelection.draw),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _SelectionOptionCard(
+                  label: widget.odds.awayTeam,
+                  odd: widget.odds.awayOdds,
+                  probability: widget.odds.awayProb,
+                  selected: _selected == BetSelection.away,
+                  onTap: () => setState(() => _selected = BetSelection.away),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Stake (USD)',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: context.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _stakeController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: _onStakeChanged,
+            style:
+                AppTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+            decoration: InputDecoration(
+              prefixText: '\$ ',
+              prefixStyle: AppTextStyles.bodyMedium.copyWith(
+                color: context.accent,
+                fontWeight: FontWeight.w700,
+              ),
+              filled: true,
+              fillColor: context.cardBg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: context.borderSubtle),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: context.borderSubtle),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: context.accent),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _quickStakes
+                .map(
+                  (amount) => GestureDetector(
+                    onTap: () => _setQuickStake(amount),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _stake == amount
+                            ? context.accent.withValues(alpha: 0.18)
+                            : context.cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _stake == amount
+                              ? context.accent
+                              : context.borderSubtle,
+                        ),
+                      ),
+                      child: Text(
+                        '\$${amount.toStringAsFixed(0)}',
+                        style: AppTextStyles.caption.copyWith(
+                          color: _stake == amount
+                              ? context.accent
+                              : context.textSecondary,
+                          fontWeight: _stake == amount
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.cardBg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Selection',
+                      style: AppTextStyles.caption
+                          .copyWith(color: context.textSecondary),
+                    ),
+                    Text(
+                      widget.odds.labelFor(_selected),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: context.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Potential payout',
+                      style: AppTextStyles.caption
+                          .copyWith(color: context.textSecondary),
+                    ),
+                    Text(
+                      '\$${_potentialPayout.toStringAsFixed(2)}',
+                      style: AppTextStyles.h4.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.accent,
+                foregroundColor: AppColors.primaryDark,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primaryDark,
+                      ),
+                    )
+                  : Text(
+                      'Confirm Bet • \$${_stake.toStringAsFixed(2)}',
+                      style: AppTextStyles.buttonMedium,
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectionOptionCard extends StatelessWidget {
+  final String label;
+  final double odd;
+  final double probability;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SelectionOptionCard({
+    required this.label,
+    required this.odd,
+    required this.probability,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? context.accent.withValues(alpha: 0.15)
+              : context.cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? context.accent : context.borderSubtle,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption.copyWith(
+                color: selected ? context.accent : context.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              odd.toStringAsFixed(2),
+              style: AppTextStyles.h4.copyWith(
+                color: context.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              '${probability.toStringAsFixed(1)}%',
+              style: AppTextStyles.caption.copyWith(
+                color: context.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Team Logo ────────────────────────────────────────────────────────────────
 
 class _TeamLogo extends StatelessWidget {
@@ -1005,7 +1644,7 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, color: AppColors.error, size: 48),
+            const Icon(Icons.error_outline, color: AppColors.error, size: 48),
             const SizedBox(height: 16),
             Text(
               'Could not load team stats',

@@ -53,6 +53,7 @@ class MatchService {
   Future<MatchListResponse> getUpcomingMatches({
     int limit = 20,
     String? leagueId,
+    bool nextGameweek = false,
   }) async {
     try {
       final response = await _apiService.get(
@@ -60,6 +61,7 @@ class MatchService {
         queryParameters: {
           'limit': limit,
           if (leagueId != null) 'leagueId': leagueId,
+          if (nextGameweek) 'nextGameweek': true,
         },
       );
       return _parseList(response.data);

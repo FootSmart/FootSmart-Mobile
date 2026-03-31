@@ -4,7 +4,7 @@ class ApiConstants {
 
   // Base URL - For Android emulator use 10.0.2.2, for iOS simulator use localhost
   // For physical device, use your computer's actual IP address
-  static const String baseUrl = 'http://192.168.1.189:3001';
+  static const String baseUrl = 'http://10.0.2.2:3001/api';
 
   // API Version
   static const String apiVersion = 'v1';
@@ -20,8 +20,8 @@ class ApiConstants {
   static const String authRegister = '/auth/register';
   static const String authRefresh = '/auth/refresh';
   static const String authLogout = '/auth/logout';
-  static const String profile = '/auth/profile';
-  static const String updateProfile = '/auth/profile/update';
+  static const String profile = '/users/me';
+  static const String updateProfile = '/users/me';
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
   static const String verifyResetToken = '/auth/verify-reset-token';
@@ -60,8 +60,10 @@ class ApiConstants {
 
   // ─── Bets ────────────────────────────────────────────────────────────────
   static const String bets = '/bets';
+  static const String placeBet = '/bets/place';
   static const String myBets = '/bets/my';
   static String betDetails(String betId) => '/bets/$betId';
+  static String matchOdds(String matchId) => '/bets/match/$matchId/odds';
 
   // ─── Wallet ──────────────────────────────────────────────────────────────
   static const String wallet = '/wallet';

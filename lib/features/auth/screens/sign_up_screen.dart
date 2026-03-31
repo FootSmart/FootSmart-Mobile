@@ -22,7 +22,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _confirmPasswordController = TextEditingController();
   final _dateOfBirthController = TextEditingController();
 
-  String _selectedRole = 'bettor'; // Default role
+  String _selectedRole = 'player'; // Default role
   final _clubNameController = TextEditingController();
   final _teamCategoryController = TextEditingController();
   bool _isAgeConfirmed = false;
@@ -158,6 +158,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
+    // Validate coach-specific fields if coach role selected
+    if (_selectedRole == 'coach' && _teamCategoryController.text.isEmpty) {
+      _showSnackBar('Please select a team category');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -169,6 +175,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         displayName: _displayNameController.text.trim(),
         dateOfBirth: _dateOfBirthController.text, // Format: YYYY-MM-DD
         role: _selectedRole,
+        club: _clubNameController.text.isNotEmpty
+            ? _clubNameController.text.trim()
+            : null,
       );
 
       final authResponse = await _authService.register(registerRequest);
@@ -604,7 +613,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           child: InkWell(
                             onTap: () {
                               setState(() {
-                                _selectedRole = 'bettor';
+                                _selectedRole = 'player';
                               });
                             },
                             child: Container(
@@ -613,14 +622,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 vertical: 16,
                               ),
                               decoration: BoxDecoration(
-                                color: _selectedRole == 'bettor'
+                                color: _selectedRole == 'player'
                                     ? context.accent.withValues(alpha: 0.15)
                                     : context.inputBg,
                                 border: Border.all(
-                                  color: _selectedRole == 'bettor'
+                                  color: _selectedRole == 'player'
                                       ? context.accent
                                       : context.borderColor,
-                                  width: _selectedRole == 'bettor' ? 2 : 1.5,
+                                  width: _selectedRole == 'player' ? 2 : 1.5,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -628,19 +637,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 children: [
                                   Icon(
                                     Icons.sports_soccer,
-                                    color: _selectedRole == 'bettor'
+                                    color: _selectedRole == 'player'
                                         ? context.accent
                                         : context.textSecondary,
                                     size: 24,
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    'Bettor',
+                                    'Player',
                                     style: AppTextStyles.buttonMedium.copyWith(
-                                      color: _selectedRole == 'bettor'
+                                      color: _selectedRole == 'player'
                                           ? context.accent
                                           : context.textSecondary,
-                                      fontWeight: _selectedRole == 'bettor'
+                                      fontWeight: _selectedRole == 'player'
                                           ? FontWeight.bold
                                           : FontWeight.normal,
                                     ),

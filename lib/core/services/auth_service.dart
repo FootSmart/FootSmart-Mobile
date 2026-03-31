@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../constants/api_constants.dart';
 import '../models/user.dart';
 import 'api_service.dart';
@@ -82,7 +83,7 @@ class AuthService {
 
     // Store user data as JSON string
     final userJson = authResponse.user.toJson();
-    await prefs.setString(_userKey, userJson.toString());
+    await prefs.setString(_userKey, jsonEncode(userJson));
 
     // Update API service with the token
     _apiService.setAuthToken(authResponse.accessToken);
@@ -102,8 +103,8 @@ class AuthService {
     if (userString == null) return null;
 
     try {
-      // Parse stored user data (simplified - in production use json.decode)
-      return null; // This will be improved with proper JSON parsing
+      final userMap = jsonDecode(userString) as Map<String, dynamic>;
+      return User.fromJson(userMap);
     } catch (e) {
       return null;
     }

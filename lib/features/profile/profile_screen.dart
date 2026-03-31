@@ -2,12 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
-import 'package:provider/provider.dart';
-import '../../core/services/theme_service.dart';
+import 'package:footsmart_pro/core/models/user.dart';
+import 'package:footsmart_pro/core/services/api_service.dart';
+import 'package:footsmart_pro/core/services/profile_service.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late final ProfileService _profileService;
+  User? _user;
+  UserStats? _userStats;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileService = ProfileService(ApiService());
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    try {
+      final user = await _profileService.getCurrentUser();
+      final stats = await _profileService.getUserStats();
+      
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _userStats = stats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   static const List<_ProfileSection> _menuSections = [
     _ProfileSection(
@@ -32,7 +71,7 @@ class ProfileScreen extends StatelessWidget {
         _ProfileMenuItem(
           icon: Icons.credit_card_outlined,
           label: 'Payment Methods',
-          route: '/app/wallet',
+          route: '/app/payment-methods',
         ),
       ],
     ),
@@ -68,107 +107,97 @@ class ProfileScreen extends StatelessWidget {
     ),
   ];
 
-  static const List<_ProfileStat> _stats = [
-    _ProfileStat(label: 'Total Bets', value: '47'),
-    _ProfileStat(label: 'Win Rate', value: '63%'),
-    _ProfileStat(label: 'Total Won', value: '\$342'),
-    _ProfileStat(label: 'ROI', value: '+18%'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF1A1F2E), Colors.transparent],
-                  ),
-                ),
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : SingleChildScrollView(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Profile',
-                      style: AppTextStyles.h2.copyWith(
-                        color: AppColors.textWhite,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0xFF1A1F2E), Colors.transparent],
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Profile',
+                            style: AppTextStyles.h2.copyWith(
+                              color: AppColors.textWhite,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          if (_user != null) ...[
+                            _UserCard(user: _user!, stats: _userStats),
+                            const SizedBox(height: 16),
+                            _MemberSinceCard(user: _user!),
+                          ],
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    const _UserCard(),
-                    const SizedBox(height: 16),
-                    const _MemberSinceCard(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final section in _menuSections) ...[
+                            Text(
+                              section.title.toUpperCase(),
+                              style: AppTextStyles.overline.copyWith(
+                                color: const Color(0xFFA0A4B8),
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileSectionCard(
+                              section: section,
+                              onTapItem: (item) => _onMenuTap(context, item),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                          _LogoutButton(
+                            onPressed: () async {
+                              await _profileService.clearCache();
+                              if (!context.mounted) return;
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                AppRoutes.signIn,
+                                (route) => false,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          Center(
+                            child: Text(
+                              'Version 1.0.0 • FootSmart Pro',
+                              style: AppTextStyles.caption.copyWith(
+                                color: const Color(0xFFA0A4B8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Theme Toggle
-                    Text(
-                      'APPEARANCE',
-                      style: AppTextStyles.overline.copyWith(
-                        color: const Color(0xFFA0A4B8),
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const _ThemeToggleCard(),
-                    const SizedBox(height: 24),
-
-                    for (final section in _menuSections) ...[
-                      Text(
-                        section.title.toUpperCase(),
-                        style: AppTextStyles.overline.copyWith(
-                          color: const Color(0xFFA0A4B8),
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _ProfileSectionCard(
-                        section: section,
-                        onTapItem: (item) => _onMenuTap(context, item),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                    _LogoutButton(
-                      onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        AppRoutes.signIn,
-                        (route) => false,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: Text(
-                        'Version 1.0.0 • FootSmart Pro',
-                        style: AppTextStyles.caption.copyWith(
-                          color: const Color(0xFFA0A4B8),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
       bottomNavigationBar: BottomNavBar(
-        currentIndex: 4, // profile tab index
+        currentIndex: 4,
         onTap: (index) {
           if (index == 0) {
             Navigator.pushNamed(context, AppRoutes.home);
@@ -185,28 +214,18 @@ class ProfileScreen extends StatelessWidget {
   }
 
   void _onMenuTap(BuildContext context, _ProfileMenuItem item) {
-    final navigator = Navigator.of(context);
-    if (item.route == '/app/wallet') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Wallet screen is coming next.')),
-      );
-      return;
-    }
-
-    final availableRoutes = AppRoutes.routes;
-    if (availableRoutes.containsKey(item.route)) {
-      navigator.pushNamed(item.route);
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${item.label} is not available yet.')),
-    );
+    Navigator.of(context).pushNamed(item.route);
   }
 }
 
 class _UserCard extends StatelessWidget {
-  const _UserCard();
+  final User user;
+  final UserStats? stats;
+
+  const _UserCard({
+    required this.user,
+    this.stats,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -239,7 +258,7 @@ class _UserCard extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  'JD',
+                  user.initials,
                   style: AppTextStyles.h3.copyWith(
                     color: const Color(0xFF0B1220),
                     fontWeight: FontWeight.bold,
@@ -252,7 +271,7 @@ class _UserCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'John Doe',
+                      user.displayName,
                       style: AppTextStyles.h3.copyWith(
                         color: AppColors.textWhite,
                         fontWeight: FontWeight.bold,
@@ -260,27 +279,36 @@ class _UserCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'john.doe@email.com',
+                      user.email,
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: const Color(0xFFA0A4B8),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Wrap(
+                    Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         _StatusBadge(
-                          label: 'Verified',
-                          backgroundColor: Color(0x3300FF88),
-                          textColor: AppColors.accentGreen,
-                          icon: Icons.check_circle,
+                          label: user.kycStatus == 'approved'
+                              ? 'Verified'
+                              : 'Not Verified',
+                          backgroundColor: user.kycStatus == 'approved'
+                              ? const Color(0x3300FF88)
+                              : const Color(0x33FF6B6B),
+                          textColor: user.kycStatus == 'approved'
+                              ? AppColors.accentGreen
+                              : AppColors.error,
+                          icon: user.kycStatus == 'approved'
+                              ? Icons.check_circle
+                              : Icons.pending_outlined,
                         ),
-                        _StatusBadge(
-                          label: 'Premium',
-                          backgroundColor: Color(0x33FF7A00),
-                          textColor: AppColors.accentOrange,
-                        ),
+                        if (user.role == 'coach')
+                          _StatusBadge(
+                            label: 'Coach',
+                            backgroundColor: const Color(0x33FF7A00),
+                            textColor: AppColors.accentOrange,
+                          ),
                       ],
                     ),
                   ],
@@ -289,7 +317,7 @@ class _UserCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          const _StatsGrid(),
+          _StatsGrid(stats: stats),
         ],
       ),
     );
@@ -297,12 +325,33 @@ class _UserCard extends StatelessWidget {
 }
 
 class _StatsGrid extends StatelessWidget {
-  const _StatsGrid();
+  final UserStats? stats;
+
+  const _StatsGrid({this.stats});
 
   @override
   Widget build(BuildContext context) {
+    final statsData = [
+      _ProfileStat(
+        label: 'Total Bets',
+        value: '${stats?.totalBets ?? 0}',
+      ),
+      _ProfileStat(
+        label: 'Win Rate',
+        value: '${(stats?.winRate ?? 0).toStringAsFixed(1)}%',
+      ),
+      _ProfileStat(
+        label: 'Total Won',
+        value: '\$${(stats?.totalWon ?? 0).toStringAsFixed(2)}',
+      ),
+      _ProfileStat(
+        label: 'ROI',
+        value: '${stats?.roi != null ? (stats!.roi > 0 ? '+' : '') : '+'}${(stats?.roi ?? 0).toStringAsFixed(1)}%',
+      ),
+    ];
+
     return Row(
-      children: ProfileScreen._stats
+      children: statsData
           .map(
             (stat) => Expanded(
               child: Column(
@@ -332,7 +381,9 @@ class _StatsGrid extends StatelessWidget {
 }
 
 class _MemberSinceCard extends StatelessWidget {
-  const _MemberSinceCard();
+  final User user;
+
+  const _MemberSinceCard({required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -358,7 +409,7 @@ class _MemberSinceCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'January 2025',
+                'January 2025', // TODO: Get from backend
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textWhite,
                   fontWeight: FontWeight.w700,
@@ -370,16 +421,18 @@ class _MemberSinceCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'Level',
+                'Status',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: const Color(0xFFA0A4B8),
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                'Pro',
+                user.accountStatus == 'active' ? 'Active' : 'Inactive',
                 style: AppTextStyles.h3.copyWith(
-                  color: AppColors.accentGreen,
+                  color: user.accountStatus == 'active'
+                      ? AppColors.accentGreen
+                      : AppColors.error,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -585,80 +638,4 @@ class _ProfileStat {
 
   final String label;
   final String value;
-}
-
-class _ThemeToggleCard extends StatelessWidget {
-  const _ThemeToggleCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final themeService = Provider.of<ThemeService>(context);
-    final isDarkMode = themeService.isDarkMode;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F2E),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF252B3D)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => themeService.toggleTheme(),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGreen.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    color: AppColors.accentGreen,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Dark Mode',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textWhite,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        isDarkMode ? 'On' : 'Off',
-                        style: AppTextStyles.caption.copyWith(
-                          color: const Color(0xFFA0A4B8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: isDarkMode,
-                  onChanged: (_) => themeService.toggleTheme(),
-                  activeThumbColor: AppColors.accentGreen,
-                  activeTrackColor:
-                      AppColors.accentGreen.withValues(alpha: 0.3),
-                  inactiveThumbColor: const Color(0xFF6B7280),
-                  inactiveTrackColor: const Color(0xFF374151),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
