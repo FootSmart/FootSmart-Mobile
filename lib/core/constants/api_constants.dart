@@ -73,6 +73,10 @@ class ApiConstants {
   static const String walletWithdraw = '/wallet/withdraw';
   static const String walletTransactions = '/wallet/transactions';
 
+  // ─── Payments (Stripe) ────────────────────────────────────────────────────
+  static const String stripeSetupIntent = '/payments/stripe/setup-intent';
+  static const String stripeDepositIntent = '/payments/stripe/deposit-intent';
+
   // ─── Analytics ───────────────────────────────────────────────────────────
   static const String analytics = '/analytics';
   static const String userStats = '/analytics/user/stats';

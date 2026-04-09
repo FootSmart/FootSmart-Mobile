@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
+import 'package:footsmart_pro/core/services/api_service.dart';
+import 'package:footsmart_pro/core/services/stripe_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({super.key});
@@ -11,6 +14,50 @@ class PaymentMethodsScreen extends StatefulWidget {
 
 class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   int _selectedCard = 0;
+
+  bool _stripeLinked = false;
+  bool _stripeLoading = false;
+  static const String _stripeLinkedKey = 'stripe_linked';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStripeLinked();
+  }
+
+  Future<void> _loadStripeLinked() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _stripeLinked = prefs.getBool(_stripeLinkedKey) ?? false);
+  }
+
+  Future<void> _setStripeLinked(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_stripeLinkedKey, value);
+    if (!mounted) return;
+    setState(() => _stripeLinked = value);
+  }
+
+  Future<void> _linkStripeCard() async {
+    if (_stripeLoading) return;
+    setState(() => _stripeLoading = true);
+    try {
+      final stripeService = StripeService(ApiService());
+      await stripeService.addCardWithPaymentSheet();
+      await _setStripeLinked(true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Carte ajoutée via Stripe.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Stripe: échec ajout carte ($e)')),
+      );
+    } finally {
+      if (mounted) setState(() => _stripeLoading = false);
+    }
+  }
 
   static const List<_CardData> _cards = [
     _CardData(
@@ -107,6 +154,16 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
             const SizedBox(height: 28),
             _sectionLabel('Other Methods'),
             const SizedBox(height: 12),
+            _PayMethodTile(
+              icon: Icons.credit_card_rounded,
+              name: 'Stripe',
+              detail: _stripeLinked
+                  ? 'Carte liée'
+                  : (_stripeLoading ? 'Connexion...' : 'Ajouter une carte'),
+              isLinked: _stripeLinked,
+              onTap: _stripeLinked ? null : _linkStripeCard,
+            ),
+            const SizedBox(height: 10),
             _PayMethodTile(
               icon: Icons.paypal_rounded,
               name: 'PayPal',
@@ -389,63 +446,68 @@ class _PayMethodTile extends StatelessWidget {
     required this.name,
     required this.detail,
     required this.isLinked,
+    this.onTap,
   });
 
   final IconData icon;
   final String name;
   final String detail;
   final bool isLinked;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F2E),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF252B3D)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-                color: const Color(0xFF252B3D),
-                borderRadius: BorderRadius.circular(10)),
-            child:
-                Icon(icon, size: 20, color: AppColors.accentGreen),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name,
-                    style: AppTextStyles.bodyMedium
-                        .copyWith(fontWeight: FontWeight.w600)),
-                Text(detail,
-                    style: AppTextStyles.caption
-                        .copyWith(color: const Color(0xFFA0A4B8))),
-              ],
-            ),
-          ),
-          if (isLinked)
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1F2E),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF252B3D)),
+        ),
+        child: Row(
+          children: [
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0x3300FF88),
-                borderRadius: BorderRadius.circular(999),
+                  color: const Color(0xFF252B3D),
+                  borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, size: 20, color: AppColors.accentGreen),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      style: AppTextStyles.bodyMedium
+                          .copyWith(fontWeight: FontWeight.w600)),
+                  Text(detail,
+                      style: AppTextStyles.caption
+                          .copyWith(color: const Color(0xFFA0A4B8))),
+                ],
               ),
-              child: Text('Linked',
-                  style: AppTextStyles.caption.copyWith(
-                      color: AppColors.accentGreen,
-                      fontWeight: FontWeight.w600)),
-            )
-          else
-            const Icon(Icons.add_rounded,
-                color: Color(0xFFA0A4B8), size: 20),
-        ],
+            ),
+            if (isLinked)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0x3300FF88),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text('Linked',
+                    style: AppTextStyles.caption.copyWith(
+                        color: AppColors.accentGreen,
+                        fontWeight: FontWeight.w600)),
+              )
+            else
+              const Icon(Icons.add_rounded,
+                  color: Color(0xFFA0A4B8), size: 20),
+          ],
+        ),
       ),
     );
   }

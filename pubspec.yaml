@@ -52,6 +52,7 @@ dependencies:
   
   # Biometrics
   local_auth: ^2.1.8
+  flutter_stripe: ^12.5.0
 
 dev_dependencies:
   flutter_test:
