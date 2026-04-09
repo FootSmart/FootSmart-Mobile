@@ -4,6 +4,8 @@ import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/services/profile_service.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/models/user.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class PersonalInformationScreen extends StatefulWidget {
   const PersonalInformationScreen({super.key});
@@ -20,6 +22,8 @@ class _PersonalInformationScreenState
   late final ProfileService _profileService;
   User? _user;
   bool _isLoading = true;
+  bool _isUploadingAvatar = false;
+  File? _pickedAvatar;
 
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
@@ -121,6 +125,51 @@ class _PersonalInformationScreenState
     }
   }
 
+  Future<void> _pickAndUploadAvatar() async {
+    if (!_editing) return;
+
+    try {
+      final picker = ImagePicker();
+      final xfile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (xfile == null) return;
+
+      final file = File(xfile.path);
+      if (mounted) {
+        setState(() {
+          _pickedAvatar = file;
+          _isUploadingAvatar = true;
+        });
+      }
+
+      final updatedUser = await _profileService.uploadAvatar(file);
+      if (!mounted) return;
+      setState(() {
+        _user = updatedUser ?? _user;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to upload image: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingAvatar = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -183,21 +232,44 @@ class _PersonalInformationScreenState
               Center(
                 child: Stack(
                   children: [
-                    Container(
-                      width: 88,
-                      height: 88,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [AppColors.accentGreen, Color(0xFF00CC6E)],
+                    GestureDetector(
+                      onTap: _editing ? _pickAndUploadAvatar : null,
+                      child: Container(
+                        width: 88,
+                        height: 88,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [AppColors.accentGreen, Color(0xFF00CC6E)],
+                          ),
                         ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _user?.initials ?? '?',
-                        style: AppTextStyles.h2.copyWith(
-                          color: const Color(0xFF0B1220),
-                          fontWeight: FontWeight.bold,
+                        alignment: Alignment.center,
+                        child: ClipOval(
+                          child: SizedBox(
+                            width: 84,
+                            height: 84,
+                            child: _isUploadingAvatar
+                                ? const Center(
+                                    child: SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  )
+                                : (_pickedAvatar != null
+                                    ? Image.file(_pickedAvatar!, fit: BoxFit.cover)
+                                    : (_user?.avatarUrl != null && _user!.avatarUrl!.isNotEmpty
+                                        ? Image.network(_user!.avatarUrl!, fit: BoxFit.cover)
+                                        : Center(
+                                            child: Text(
+                                              _user?.initials ?? '?',
+                                              style: AppTextStyles.h2.copyWith(
+                                                color: const Color(0xFF0B1220),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ))),
+                          ),
                         ),
                       ),
                     ),

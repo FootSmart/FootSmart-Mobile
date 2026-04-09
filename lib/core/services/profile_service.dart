@@ -3,6 +3,8 @@ import 'dart:convert';
 import '../models/user.dart';
 import '../constants/api_constants.dart';
 import 'api_service.dart';
+import 'package:dio/dio.dart';
+import 'dart:io';
 
 class ProfileService {
   final ApiService _apiService;
@@ -57,6 +59,31 @@ class ProfileService {
       }
     } catch (e) {
       rethrow;
+    }
+    return null;
+  }
+
+  /// Upload avatar image (multipart/form-data)
+  Future<User?> uploadAvatar(File imageFile) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        imageFile.path,
+        filename: imageFile.path.split(Platform.pathSeparator).last,
+      ),
+    });
+
+    final response = await _apiService.put(
+      ApiConstants.uploadAvatar,
+      data: formData,
+      options: Options(
+        contentType: 'multipart/form-data',
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final user = User.fromJson(response.data as Map<String, dynamic>);
+      await _saveUserLocally(user);
+      return user;
     }
     return null;
   }

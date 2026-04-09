@@ -257,11 +257,35 @@ class _UserCard extends StatelessWidget {
                   ),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  user.initials,
-                  style: AppTextStyles.h3.copyWith(
-                    color: const Color(0xFF0B1220),
-                    fontWeight: FontWeight.bold,
+                child: ClipOval(
+                  child: SizedBox(
+                    width: 76,
+                    height: 76,
+                    child: (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+                        ? Image.network(
+                            user.avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Text(
+                                  user.initials,
+                                  style: AppTextStyles.h3.copyWith(
+                                    color: const Color(0xFF0B1220),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Center(
+                            child: Text(
+                              user.initials,
+                              style: AppTextStyles.h3.copyWith(
+                                color: const Color(0xFF0B1220),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
               ),

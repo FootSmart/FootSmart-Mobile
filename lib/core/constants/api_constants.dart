@@ -4,7 +4,7 @@ class ApiConstants {
 
   // Base URL - For Android emulator use 10.0.2.2, for iOS simulator use localhost
   // For physical device, use your computer's actual IP address
-  static const String baseUrl = 'http://10.0.2.2:3001/api';
+  static const String baseUrl = 'http://10.0.2.2:3008/api';
 
   // API Version
   static const String apiVersion = 'v1';
@@ -22,6 +22,7 @@ class ApiConstants {
   static const String authLogout = '/auth/logout';
   static const String profile = '/users/me';
   static const String updateProfile = '/users/me';
+  static const String uploadAvatar = '/users/me/avatar';
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
   static const String verifyResetToken = '/auth/verify-reset-token';

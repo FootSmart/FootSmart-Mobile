@@ -12,6 +12,13 @@ class User {
   final String accountStatus;
   final double balance;
 
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
   User({
     required this.id,
     required this.email,
@@ -57,7 +64,7 @@ class User {
       phoneNumber: json['phoneNumber'] as String?,
       kycStatus: json['kycStatus'] as String? ?? 'not_started',
       accountStatus: json['accountStatus'] as String? ?? 'active',
-      balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      balance: _parseDouble(json['balance']),
     );
   }
 
