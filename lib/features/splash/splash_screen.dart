@@ -5,6 +5,9 @@ import 'dart:async';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/constants/app_strings.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
+import 'package:footsmart_pro/core/services/api_service.dart';
+import 'package:footsmart_pro/core/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/extensions/theme_context.dart';
 
 /// Splash Screen - First screen user sees when opening the app
@@ -93,9 +96,27 @@ class _SplashScreenState extends State<SplashScreen>
   /// Navigate to next screen after delay
   Future<void> _navigateToNext() async {
     await Future.delayed(const Duration(seconds: 5));
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+    if (!mounted) return;
+
+    final authService = AuthService(ApiService());
+    final isLoggedIn = await authService.isLoggedIn();
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
+    if (!mounted) return;
+
+    if (isLoggedIn) {
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      return;
     }
+
+    if (!onboardingSeen) {
+      Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+      return;
+    }
+
+    Navigator.pushReplacementNamed(context, AppRoutes.signIn);
   }
 
   @override

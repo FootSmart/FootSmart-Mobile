@@ -22,12 +22,17 @@ class _SignInScreenState extends State<SignInScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _rememberMe = true;
   late final AuthService _authService;
 
   @override
   void initState() {
     super.initState();
     _authService = AuthService(ApiService());
+    _authService.getRememberMe().then((value) {
+      if (!mounted) return;
+      setState(() => _rememberMe = value);
+    });
   }
 
   @override
@@ -87,7 +92,8 @@ class _SignInScreenState extends State<SignInScreen> {
         password: password,
       );
 
-      final authResponse = await _authService.login(loginRequest);
+      final authResponse =
+          await _authService.login(loginRequest, rememberMe: _rememberMe);
 
       if (mounted) {
         // Show success message
@@ -329,6 +335,30 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
 
                 const SizedBox(height: 12),
+
+                // Remember me
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _rememberMe,
+                      activeColor: context.accent,
+                      onChanged: (v) async {
+                        final next = v ?? true;
+                        setState(() => _rememberMe = next);
+                        await _authService.setRememberMe(next);
+                      },
+                    ),
+                    Text(
+                      'Remember me',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: context.textSecondary,
+                      ),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
 
                 // Forgot password
                 Align(

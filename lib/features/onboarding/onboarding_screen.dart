@@ -6,6 +6,7 @@ import 'package:footsmart_pro/core/constants/app_strings.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/extensions/theme_context.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -79,12 +80,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.signUp);
+      _finishOnboarding();
     }
   }
 
   void _skip() {
-    Navigator.pushReplacementNamed(context, AppRoutes.signUp);
+    _finishOnboarding();
+  }
+
+  Future<void> _finishOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_seen', true);
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.signIn);
   }
 
   @override

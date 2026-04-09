@@ -8,18 +8,19 @@ class AuthService {
   final ApiService _apiService;
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'user_data';
+  static const String _rememberMeKey = 'remember_me';
 
   AuthService(this._apiService);
 
   /// Login with email and password
-  Future<AuthResponse> login(LoginRequest request) async {
+  Future<AuthResponse> login(LoginRequest request, {bool rememberMe = true}) async {
     final response = await _apiService.post(
       ApiConstants.authLogin,
       data: request.toJson(),
     );
 
     final authResponse = AuthResponse.fromJson(response.data);
-    await _saveAuthData(authResponse);
+    await _saveAuthData(authResponse, rememberMe: rememberMe);
     return authResponse;
   }
 
@@ -31,7 +32,7 @@ class AuthService {
     );
 
     final authResponse = AuthResponse.fromJson(response.data);
-    await _saveAuthData(authResponse);
+    await _saveAuthData(authResponse, rememberMe: true);
     return authResponse;
   }
 
@@ -77,13 +78,19 @@ class AuthService {
   }
 
   /// Save authentication data to local storage
-  Future<void> _saveAuthData(AuthResponse authResponse) async {
+  Future<void> _saveAuthData(AuthResponse authResponse, {required bool rememberMe}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, authResponse.accessToken);
+    await prefs.setBool(_rememberMeKey, rememberMe);
 
     // Store user data as JSON string
     final userJson = authResponse.user.toJson();
-    await prefs.setString(_userKey, jsonEncode(userJson));
+    if (rememberMe) {
+      await prefs.setString(_tokenKey, authResponse.accessToken);
+      await prefs.setString(_userKey, jsonEncode(userJson));
+    } else {
+      await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
+    }
 
     // Update API service with the token
     _apiService.setAuthToken(authResponse.accessToken);
@@ -128,9 +135,37 @@ class AuthService {
 
   /// Initialize auth state - call on app startup
   Future<void> initializeAuth() async {
-    final token = await getToken();
-    if (token != null) {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool(_rememberMeKey) ?? true;
+    final token = prefs.getString(_tokenKey);
+
+    if (!rememberMe) {
+      await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
+      _apiService.clearAuthToken();
+      return;
+    }
+
+    if (token != null && token.isNotEmpty) {
       _apiService.setAuthToken(token);
+    } else {
+      _apiService.clearAuthToken();
+    }
+  }
+
+  Future<bool> getRememberMe() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_rememberMeKey) ?? true;
+  }
+
+  Future<void> setRememberMe(bool rememberMe) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_rememberMeKey, rememberMe);
+    if (!rememberMe) {
+      // Si l'utilisateur désactive "remember me", on supprime les données persistées.
+      await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
+      _apiService.clearAuthToken();
     }
   }
 }

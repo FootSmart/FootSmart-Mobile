@@ -28,6 +28,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isAgeConfirmed = false;
   bool _isTermsAccepted = false;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   late final AuthService _authService;
 
   final List<String> _teamCategories = [
@@ -419,7 +421,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       validator: _validatePassword,
                       style: AppTextStyles.inputText.copyWith(
                         color: context.textPrimary,
@@ -431,9 +433,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         filled: true,
                         fillColor: context.inputBg,
-                        suffixIcon: Icon(
-                          Icons.visibility_off_outlined,
-                          color: context.iconInactive,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: context.iconInactive,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -482,7 +493,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     TextFormField(
                       controller: _confirmPasswordController,
-                      obscureText: true,
+                      obscureText: _obscureConfirmPassword,
                       validator: _validateConfirmPassword,
                       style: AppTextStyles.inputText.copyWith(
                         color: context.textPrimary,
@@ -494,9 +505,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         filled: true,
                         fillColor: context.inputBg,
-                        suffixIcon: Icon(
-                          Icons.visibility_off_outlined,
-                          color: context.iconInactive,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: context.iconInactive,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                            });
+                          },
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
