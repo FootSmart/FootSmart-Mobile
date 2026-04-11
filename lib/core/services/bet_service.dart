@@ -46,4 +46,34 @@ class BetService {
       throw ApiException('Failed to place bet: $e');
     }
   }
+
+  /// Récupère les paris de l'utilisateur connecté depuis le backend.
+  /// [status] : filtre optionnel — 'pending', 'won', 'lost', 'cancelled'
+  /// [limit]  : nombre max de résultats (défaut 50)
+  /// [offset] : pagination (défaut 0)
+  Future<MyBetsResponse> getMyBets({
+    String? status,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final Map<String, dynamic> queryParams = {
+        'limit': limit,
+        'offset': offset,
+        if (status != null && status.isNotEmpty) 'status': status,
+      };
+
+      final response = await _apiService.get(
+        ApiConstants.myBets,
+        queryParameters: queryParams,
+      );
+
+      return MyBetsResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to fetch bets: $e');
+    }
+  }
 }

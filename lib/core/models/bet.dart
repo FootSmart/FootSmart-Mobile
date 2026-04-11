@@ -143,6 +143,33 @@ class PlacedBet {
   }
 }
 
+/// Réponse de GET /bets/my
+class MyBetsResponse {
+  final List<PlacedBet> bets;
+  final int total;
+  final int limit;
+  final int offset;
+
+  const MyBetsResponse({
+    required this.bets,
+    required this.total,
+    required this.limit,
+    required this.offset,
+  });
+
+  factory MyBetsResponse.fromJson(Map<String, dynamic> json) {
+    final rawBets = json['bets'] as List<dynamic>? ?? [];
+    return MyBetsResponse(
+      bets: rawBets
+          .map((e) => PlacedBet.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      total: json['total'] as int? ?? 0,
+      limit: json['limit'] as int? ?? 50,
+      offset: json['offset'] as int? ?? 0,
+    );
+  }
+}
+
 class PlaceBetResult {
   final bool success;
   final String message;
