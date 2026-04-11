@@ -89,7 +89,8 @@ class ExploreScreen extends StatelessWidget {
                     title: 'Advanced Match Insights',
                     subtitle: 'Deep dive into match statistics\n& patterns',
                     onTap: () {
-                      // Navigate to Advanced Match Insights
+                      Navigator.pushNamed(
+                          context, AppRoutes.advancedMatchInsights);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -100,7 +101,8 @@ class ExploreScreen extends StatelessWidget {
                     title: 'AI Prediction Center',
                     subtitle: 'Machine learning powered\nmatch predictions',
                     onTap: () {
-                      // Navigate to AI Prediction Center
+                      Navigator.pushNamed(
+                          context, AppRoutes.aiPredictionCenter);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -111,7 +113,8 @@ class ExploreScreen extends StatelessWidget {
                     title: 'Market Movements',
                     subtitle: 'Real-time odds tracking &\nmarket analysis',
                     onTap: () {
-                      // Navigate to Market Movements
+                      Navigator.pushNamed(
+                          context, AppRoutes.marketMovements);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -122,7 +125,8 @@ class ExploreScreen extends StatelessWidget {
                     title: 'Analytics Dashboard',
                     subtitle: 'Your betting performance &\nstatistics',
                     onTap: () {
-                      // Navigate to Analytics Dashboard
+                      Navigator.pushNamed(
+                          context, AppRoutes.analyticsDashboard);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -133,7 +137,8 @@ class ExploreScreen extends StatelessWidget {
                     title: 'Bet History Analytics',
                     subtitle: 'Detailed breakdown of your\nbetting patterns',
                     onTap: () {
-                      // Navigate to Bet History Analytics
+                      Navigator.pushNamed(
+                          context, AppRoutes.betHistoryAnalytics);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -144,7 +149,8 @@ class ExploreScreen extends StatelessWidget {
                     title: 'Strategy Builder',
                     subtitle: 'Create & test betting strategies\nwith AI',
                     onTap: () {
-                      // Navigate to Strategy Builder
+                      Navigator.pushNamed(
+                          context, AppRoutes.strategyBuilder);
                     },
                   ),
                   const SizedBox(height: 100),

@@ -82,6 +82,10 @@ class ApiConstants {
   static const String analytics = '/analytics';
   static const String userStats = '/analytics/user/stats';
   static String teamAnalytics(String teamId) => '/analytics/team/$teamId';
+  static const String analyticsUserStats = '/analytics/user/stats';
+  static const String analyticsMatchInsights = '/analytics/matches/insights';
+  static const String analyticsMarketMovements = '/analytics/market/movements';
+  static const String analyticsPredictions = '/analytics/predictions';
 
   // ─── Headers ─────────────────────────────────────────────────────────────
   static Map<String, String> get defaultHeaders => {

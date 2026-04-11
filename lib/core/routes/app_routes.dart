@@ -6,6 +6,12 @@ import 'package:footsmart_pro/features/betting/betting_screen.dart';
 import 'package:footsmart_pro/features/explore/explore_screen.dart';
 import 'package:footsmart_pro/features/explore/competition_hub_screen.dart';
 import 'package:footsmart_pro/features/explore/players_hub_screen.dart';
+import 'package:footsmart_pro/features/explore/advanced_match_insights_screen.dart';
+import 'package:footsmart_pro/features/explore/ai_prediction_center_screen.dart';
+import 'package:footsmart_pro/features/explore/market_movements_screen.dart';
+import 'package:footsmart_pro/features/explore/analytics_dashboard_screen.dart';
+import 'package:footsmart_pro/features/explore/bet_history_analytics_screen.dart';
+import 'package:footsmart_pro/features/explore/strategy_builder_screen.dart';
 import 'package:footsmart_pro/features/home/home_screen.dart';
 import 'package:footsmart_pro/features/match/match_detail_screen.dart';
 import 'package:footsmart_pro/features/onboarding/onboarding_screen.dart';
@@ -56,6 +62,14 @@ class AppRoutes {
   static const String settings = '/app/settings';
   static const String matchDetail = '/match-detail';
 
+  // Explore routes
+  static const String advancedMatchInsights = '/explore/match-insights';
+  static const String aiPredictionCenter = '/explore/ai-predictions';
+  static const String marketMovements = '/explore/market-movements';
+  static const String analyticsDashboard = '/explore/analytics-dashboard';
+  static const String betHistoryAnalytics = '/explore/bet-history-analytics';
+  static const String strategyBuilder = '/explore/strategy-builder';
+
   // Coach routes
   static const String coachHome = '/coach-home';
   static const String coachTactics = '/coach-tactics';
@@ -91,6 +105,15 @@ class AppRoutes {
               ModalRoute.of(context)!.settings.arguments as FootballMatch;
           return MatchDetailScreen(match: match);
         },
+
+        // Explore routes
+        advancedMatchInsights: (context) =>
+            const AdvancedMatchInsightsScreen(),
+        aiPredictionCenter: (context) => const AIPredictionCenterScreen(),
+        marketMovements: (context) => const MarketMovementsScreen(),
+        analyticsDashboard: (context) => const AnalyticsDashboardScreen(),
+        betHistoryAnalytics: (context) => const BetHistoryAnalyticsScreen(),
+        strategyBuilder: (context) => const StrategyBuilderScreen(),
 
         // Coach routes
         coachHome: (context) => const CoachHomeScreen(),
