@@ -6,6 +6,7 @@ import '../../core/extensions/theme_context.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/models/wallet.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/stripe_service.dart';
 import '../../core/services/wallet_service.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
@@ -94,40 +95,54 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
+  /// Dépôt réel via Stripe (PaymentIntent) — le crédit wallet est fait côté serveur par webhook.
   Future<void> _handleDeposit(double amount) async {
+    if (amount < 0.5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Montant minimum 0,50 \$ (exigence Stripe).',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isProcessingDeposit = true);
 
     try {
-      final result = await _walletService.deposit(amount);
+      final stripe = StripeService(ApiService());
+      final completed = await stripe.depositWithPaymentSheet(amount: amount);
+      if (!mounted) return;
+      if (!completed) {
+        setState(() => _isProcessingDeposit = false);
+        return;
+      }
+
+      // Le webhook `payment_intent.succeeded` crédite le wallet (quelques secondes max).
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await _loadWalletData();
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await _loadWalletData();
+
       if (mounted) {
         setState(() => _isProcessingDeposit = false);
-
-        // Update balance locally
-        _balance = WalletBalance(
-          balance: result.transaction.newBalance,
-          currency: _balance?.currency ?? 'USD',
-        );
-
-        // Reload transactions
-        await _loadTransactions();
-
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text('Successfully deposited \$${amount.toStringAsFixed(2)}'),
-              backgroundColor: AppColors.success,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Paiement Stripe réussi — solde mis à jour (vérifie aussi Stripe Dashboard › Paiements).',
             ),
-          );
-        }
+            backgroundColor: AppColors.success,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessingDeposit = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Deposit failed: ${e.toString()}'),
+            content: Text('Dépôt Stripe : ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -487,6 +502,12 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                           )
                           .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Le montant sera débité via Stripe (visible dans Dashboard › Paiements, mode test).',
+                      style: AppTextStyles.caption
+                          .copyWith(color: const Color(0xFFA0A4B8)),
                     ),
                     const SizedBox(height: 16),
                     Text(

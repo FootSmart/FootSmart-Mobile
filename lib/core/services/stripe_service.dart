@@ -7,7 +7,19 @@ class StripeService {
 
   final ApiService _apiService;
 
-  Future<void> addCardWithPaymentSheet() async {
+  /// Cartes enregistrées côté Stripe pour l’utilisateur connecté (JWT).
+  Future<List<Map<String, dynamic>>> fetchPaymentMethods() async {
+    final res = await _apiService.get(ApiConstants.stripePaymentMethods);
+    final data = res.data as Map<String, dynamic>;
+    final list = data['paymentMethods'];
+    if (list is! List) return [];
+    return list
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList(growable: false);
+  }
+
+  /// Retourne `true` si la carte est enregistrée, `false` si l’utilisateur a fermé / annulé le flux.
+  Future<bool> addCardWithPaymentSheet() async {
     final res = await _apiService.post(ApiConstants.stripeSetupIntent);
     final data = res.data as Map<String, dynamic>;
 
@@ -27,10 +39,19 @@ class StripeService {
       ),
     );
 
-    await Stripe.instance.presentPaymentSheet();
+    try {
+      await Stripe.instance.presentPaymentSheet();
+      return true;
+    } on StripeException catch (e) {
+      if (e.error.code == FailureCode.Canceled) {
+        return false;
+      }
+      rethrow;
+    }
   }
 
-  Future<void> depositWithPaymentSheet({
+  /// Retourne `true` si le paiement est terminé, `false` si annulé par l’utilisateur.
+  Future<bool> depositWithPaymentSheet({
     required double amount,
     String currency = 'usd',
   }) async {
@@ -54,7 +75,15 @@ class StripeService {
       ),
     );
 
-    await Stripe.instance.presentPaymentSheet();
+    try {
+      await Stripe.instance.presentPaymentSheet();
+      return true;
+    } on StripeException catch (e) {
+      if (e.error.code == FailureCode.Canceled) {
+        return false;
+      }
+      rethrow;
+    }
   }
 }
 

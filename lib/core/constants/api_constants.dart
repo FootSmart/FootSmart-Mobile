@@ -76,6 +76,7 @@ class ApiConstants {
   // ─── Payments (Stripe) ────────────────────────────────────────────────────
   static const String stripeSetupIntent = '/payments/stripe/setup-intent';
   static const String stripeDepositIntent = '/payments/stripe/deposit-intent';
+  static const String stripePaymentMethods = '/payments/stripe/payment-methods';
 
   // ─── Analytics ───────────────────────────────────────────────────────────
   static const String analytics = '/analytics';

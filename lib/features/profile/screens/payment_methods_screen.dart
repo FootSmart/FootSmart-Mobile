@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
+import 'package:footsmart_pro/core/models/wallet.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/services/stripe_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:footsmart_pro/core/services/wallet_service.dart';
+import 'package:intl/intl.dart';
 
 class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({super.key});
@@ -15,81 +17,107 @@ class PaymentMethodsScreen extends StatefulWidget {
 class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   int _selectedCard = 0;
 
-  bool _stripeLinked = false;
   bool _stripeLoading = false;
-  static const String _stripeLinkedKey = 'stripe_linked';
+
+  List<_CardData> _savedCards = [];
+  bool _cardsLoading = true;
+
+  List<WalletTransaction> _walletTransactions = [];
+  bool _txLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStripeLinked();
+    _initData();
   }
 
-  Future<void> _loadStripeLinked() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() => _stripeLinked = prefs.getBool(_stripeLinkedKey) ?? false);
+  Future<void> _initData() async {
+    await Future.wait([
+      _refreshSavedCards(),
+      _refreshWalletTransactions(),
+    ]);
   }
 
-  Future<void> _setStripeLinked(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_stripeLinkedKey, value);
-    if (!mounted) return;
-    setState(() => _stripeLinked = value);
+  Future<void> _refreshSavedCards() async {
+    setState(() => _cardsLoading = true);
+    try {
+      final stripe = StripeService(ApiService());
+      final list = await stripe.fetchPaymentMethods();
+      if (!mounted) return;
+      setState(() {
+        _savedCards = [
+          for (var i = 0; i < list.length; i++)
+            _CardData.fromStripe(list[i], i),
+        ];
+        _selectedCard = 0;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _savedCards = []);
+    } finally {
+      if (mounted) setState(() => _cardsLoading = false);
+    }
   }
+
+  Future<void> _refreshWalletTransactions() async {
+    setState(() => _txLoading = true);
+    try {
+      final ws = WalletService(ApiService());
+      final res = await ws.getTransactions(limit: 20);
+      if (!mounted) return;
+      setState(() => _walletTransactions = res.transactions);
+    } catch (_) {
+      if (mounted) setState(() => _walletTransactions = []);
+    } finally {
+      if (mounted) setState(() => _txLoading = false);
+    }
+  }
+
+  bool get _hasStripeCards => _savedCards.isNotEmpty;
 
   Future<void> _linkStripeCard() async {
     if (_stripeLoading) return;
     setState(() => _stripeLoading = true);
     try {
       final stripeService = StripeService(ApiService());
-      await stripeService.addCardWithPaymentSheet();
-      await _setStripeLinked(true);
+      final completed = await stripeService.addCardWithPaymentSheet();
+      if (!completed) {
+        return;
+      }
+      await _refreshSavedCards();
+      await _refreshWalletTransactions();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Carte ajoutée via Stripe.')),
+        const SnackBar(content: Text('Carte enregistrée (Stripe).')),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Stripe: échec ajout carte ($e)')),
+        SnackBar(content: Text('Stripe : $e')),
       );
     } finally {
       if (mounted) setState(() => _stripeLoading = false);
     }
   }
 
-  static const List<_CardData> _cards = [
-    _CardData(
-      last4: '4242',
-      brand: 'Visa',
-      expiry: '09 / 28',
-      holder: 'John Doe',
-      isDefault: true,
-      color1: Color(0xFF1A3A4A),
-      color2: Color(0xFF0D2233),
-    ),
-    _CardData(
-      last4: '1881',
-      brand: 'Mastercard',
-      expiry: '03 / 27',
-      holder: 'John Doe',
-      isDefault: false,
-      color1: Color(0xFF3A1A1A),
-      color2: Color(0xFF2A0D0D),
-    ),
-  ];
+  static String _walletTxLabel(WalletTransaction t) {
+    switch (t.type) {
+      case WalletTransactionType.deposit:
+        return 'Dépôt wallet';
+      case WalletTransactionType.withdraw:
+        return 'Retrait wallet';
+      case WalletTransactionType.bet:
+        return 'Pari';
+      case WalletTransactionType.win:
+        return 'Gain';
+    }
+  }
 
-  static const List<_TxRow> _recent = [
-    _TxRow(method: 'Visa •••• 4242', amount: '+\$100.00',
-        date: 'Feb 13, 2026', isCredit: true),
-    _TxRow(method: 'Visa •••• 4242', amount: '-\$50.00',
-        date: 'Feb 12, 2026', isCredit: false),
-    _TxRow(method: 'PayPal', amount: '+\$200.00',
-        date: 'Feb 11, 2026', isCredit: true),
-    _TxRow(method: 'Mastercard •••• 1881', amount: '-\$75.00',
-        date: 'Feb 8, 2026', isCredit: false),
-  ];
+  static String _formatTxAmount(WalletTransaction t) {
+    final sign = t.isPositive ? '+' : '−';
+    return '$sign\$${t.amount.abs().toStringAsFixed(2)}';
+  }
+
+  static final DateFormat _txDate = DateFormat.yMMMd('fr_FR');
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +138,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           IconButton(
             icon:
                 const Icon(Icons.add_rounded, color: AppColors.accentGreen),
-            onPressed: _showAddCardSheet,
+            onPressed: _stripeLoading ? null : _linkStripeCard,
           ),
         ],
       ),
@@ -123,66 +151,57 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
             const SizedBox(height: 16),
             SizedBox(
               height: 160,
-              child: PageView.builder(
-                itemCount: _cards.length,
-                onPageChanged: (i) => setState(() => _selectedCard = i),
-                itemBuilder: (_, i) => Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: _CardWidget(card: _cards[i]),
-                ),
-              ),
+              child: _cardsLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.accentGreen,
+                      ),
+                    )
+                  : _savedCards.isEmpty
+                      ? const _EmptySavedCardsHint()
+                      : PageView.builder(
+                          itemCount: _savedCards.length,
+                          onPageChanged: (i) =>
+                              setState(() => _selectedCard = i),
+                          itemBuilder: (_, i) => Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: _CardWidget(card: _savedCards[i]),
+                          ),
+                        ),
             ),
             const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _cards.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: i == _selectedCard ? 20 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: i == _selectedCard
-                        ? AppColors.accentGreen
-                        : const Color(0xFF252B3D),
-                    borderRadius: BorderRadius.circular(4),
+            if (!_cardsLoading && _savedCards.isNotEmpty)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _savedCards.length,
+                  (i) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: i == _selectedCard ? 20 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: i == _selectedCard
+                          ? AppColors.accentGreen
+                          : const Color(0xFF252B3D),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
                 ),
               ),
-            ),
             const SizedBox(height: 28),
-            _sectionLabel('Other Methods'),
+            _sectionLabel('Stripe'),
             const SizedBox(height: 12),
             _PayMethodTile(
               icon: Icons.credit_card_rounded,
-              name: 'Stripe',
-              detail: _stripeLinked
-                  ? 'Carte liée'
-                  : (_stripeLoading ? 'Connexion...' : 'Ajouter une carte'),
-              isLinked: _stripeLinked,
-              onTap: _stripeLinked ? null : _linkStripeCard,
-            ),
-            const SizedBox(height: 10),
-            _PayMethodTile(
-              icon: Icons.paypal_rounded,
-              name: 'PayPal',
-              detail: 'john@paypal.com',
-              isLinked: true,
-            ),
-            const SizedBox(height: 10),
-            _PayMethodTile(
-              icon: Icons.account_balance_outlined,
-              name: 'Bank Transfer',
-              detail: 'Add your bank account',
-              isLinked: false,
-            ),
-            const SizedBox(height: 10),
-            _PayMethodTile(
-              icon: Icons.currency_bitcoin_rounded,
-              name: 'Crypto',
-              detail: 'BTC / ETH / USDT',
-              isLinked: false,
+              name: 'Cartes Stripe',
+              detail: _stripeLoading
+                  ? 'Ouverture…'
+                  : (_hasStripeCards
+                      ? '${_savedCards.length} carte(s) — appuyer pour en ajouter'
+                      : 'Ajouter une carte'),
+              isLinked: _hasStripeCards,
+              onTap: _stripeLoading ? null : _linkStripeCard,
             ),
             const SizedBox(height: 28),
             _sectionLabel('Recent Transactions'),
@@ -193,171 +212,116 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFF252B3D)),
               ),
-              child: Column(
-                children: [
-                  for (int i = 0; i < _recent.length; i++) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: _recent[i].isCredit
-                                  ? const Color(0x3300FF88)
-                                  : const Color(0x33FF7A00),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              _recent[i].isCredit
-                                  ? Icons.south_west_rounded
-                                  : Icons.north_east_rounded,
-                              size: 16,
-                              color: _recent[i].isCredit
-                                  ? AppColors.accentGreen
-                                  : AppColors.accentOrange,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(_recent[i].method,
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                        fontWeight: FontWeight.w600)),
-                                Text(_recent[i].date,
-                                    style: AppTextStyles.caption.copyWith(
-                                        color: const Color(0xFFA0A4B8))),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            _recent[i].amount,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: _recent[i].isCredit
-                                  ? AppColors.accentGreen
-                                  : AppColors.textWhite,
-                            ),
-                          ),
-                        ],
+              child: _txLoading
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.accentGreen,
+                        ),
                       ),
-                    ),
-                    if (i < _recent.length - 1)
-                      const Divider(
-                          color: Color(0xFF252B3D), height: 1, indent: 56),
-                  ],
-                ],
-              ),
+                    )
+                  : _walletTransactions.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 24),
+                          child: Center(
+                            child: Text(
+                              'Aucune transaction wallet pour le moment.',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: const Color(0xFFA0A4B8),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            for (int i = 0;
+                                i < _walletTransactions.length;
+                                i++) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: _walletTransactions[i]
+                                                .isPositive
+                                            ? const Color(0x3300FF88)
+                                            : const Color(0x33FF7A00),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        _walletTransactions[i].isPositive
+                                            ? Icons.south_west_rounded
+                                            : Icons.north_east_rounded,
+                                        size: 16,
+                                        color: _walletTransactions[i]
+                                                .isPositive
+                                            ? AppColors.accentGreen
+                                            : AppColors.accentOrange,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _walletTxLabel(
+                                                _walletTransactions[i]),
+                                            style: AppTextStyles.bodyMedium
+                                                .copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            _txDate.format(
+                                              _walletTransactions[i]
+                                                  .createdAt
+                                                  .toLocal(),
+                                            ),
+                                            style: AppTextStyles.caption
+                                                .copyWith(
+                                              color: const Color(0xFFA0A4B8),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      _formatTxAmount(
+                                          _walletTransactions[i]),
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: _walletTransactions[i]
+                                                .isPositive
+                                            ? AppColors.accentGreen
+                                            : AppColors.textWhite,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (i < _walletTransactions.length - 1)
+                                const Divider(
+                                  color: Color(0xFF252B3D),
+                                  height: 1,
+                                  indent: 56,
+                                ),
+                            ],
+                          ],
+                        ),
             ),
           ],
         ),
       ),
     );
   }
-
-  void _showAddCardSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1F2E),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF252B3D),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text('Add New Card',
-                style: AppTextStyles.h4
-                    .copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            _sheetField('Card Number', '1234 5678 9012 3456'),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: _sheetField('Expiry', 'MM / YY')),
-              const SizedBox(width: 12),
-              Expanded(child: _sheetField('CVV', '•••')),
-            ]),
-            const SizedBox(height: 12),
-            _sheetField('Card Holder Name', 'John Doe'),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accentGreen,
-                  foregroundColor: const Color(0xFF0B1220),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-                child: Text('Save Card',
-                    style: AppTextStyles.buttonMedium
-                        .copyWith(color: const Color(0xFF0B1220),
-                            fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget _sheetField(String label, String hint) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: AppTextStyles.bodySmall
-                  .copyWith(color: const Color(0xFFA0A4B8))),
-          const SizedBox(height: 6),
-          TextField(
-            style: AppTextStyles.bodyMedium,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: AppTextStyles.bodyMedium
-                  .copyWith(color: const Color(0xFF606060)),
-              filled: true,
-              fillColor: const Color(0xFF252B3D),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF252B3D)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF252B3D)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: AppColors.accentGreen),
-              ),
-            ),
-          ),
-        ],
-      );
 
   static Widget _sectionLabel(String text) => Text(
         text.toUpperCase(),
@@ -366,6 +330,45 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2),
       );
+}
+
+class _EmptySavedCardsHint extends StatelessWidget {
+  const _EmptySavedCardsHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F2E),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF252B3D)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.credit_card_off_rounded,
+            color: AppColors.accentGreen.withValues(alpha: 0.75),
+            size: 32,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Aucune carte enregistrée',
+            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Ajoutez une carte via Stripe ci-dessous',
+            style: AppTextStyles.caption.copyWith(color: const Color(0xFFA0A4B8)),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CardWidget extends StatelessWidget {
@@ -524,6 +527,39 @@ class _CardData {
     required this.color2,
   });
 
+  static const List<(Color, Color)> _gradientPairs = [
+    (Color(0xFF1A3A4A), Color(0xFF0D2233)),
+    (Color(0xFF3A1A1A), Color(0xFF2A0D0D)),
+    (Color(0xFF1A2A3A), Color(0xFF0D1A2A)),
+    (Color(0xFF2A1A3A), Color(0xFF1A0D2A)),
+  ];
+
+  factory _CardData.fromStripe(Map<String, dynamic> json, int index) {
+    final expM = json['expMonth'];
+    final expY = json['expYear'];
+    var expiry = '— / —';
+    if (expM != null && expY != null) {
+      final m = expM.toString().padLeft(2, '0');
+      final yStr = expY.toString();
+      final y = yStr.length >= 2 ? yStr.substring(yStr.length - 2) : yStr;
+      expiry = '$m / $y';
+    }
+    final holderRaw = json['holder'] as String?;
+    final holder = (holderRaw != null && holderRaw.trim().isNotEmpty)
+        ? holderRaw.trim()
+        : 'Card holder';
+    final g = _gradientPairs[index % _gradientPairs.length];
+    return _CardData(
+      last4: json['last4'] as String? ?? '----',
+      brand: json['brand'] as String? ?? 'Card',
+      expiry: expiry,
+      holder: holder,
+      isDefault: json['isDefault'] == true,
+      color1: g.$1,
+      color2: g.$2,
+    );
+  }
+
   final String last4;
   final String brand;
   final String expiry;
@@ -532,18 +568,3 @@ class _CardData {
   final Color color1;
   final Color color2;
 }
-
-class _TxRow {
-  const _TxRow({
-    required this.method,
-    required this.amount,
-    required this.date,
-    required this.isCredit,
-  });
-
-  final String method;
-  final String amount;
-  final String date;
-  final bool isCredit;
-}
-

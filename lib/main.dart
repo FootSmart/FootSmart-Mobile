@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_theme.dart';
@@ -20,6 +21,9 @@ void main() async {
   // Initialize auth token from storage
   final authService = AuthService(ApiService());
   await authService.initializeAuth();
+
+  // Requis pour DateFormat avec locale (ex. fr_FR) — écrans wallet / paiements
+  await initializeDateFormatting('fr_FR', null);
 
   runApp(
     ChangeNotifierProvider(
