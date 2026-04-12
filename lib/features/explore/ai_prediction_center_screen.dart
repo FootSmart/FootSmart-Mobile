@@ -346,16 +346,30 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
     final drawOdds = _safeDouble(item['drawOdds'] ?? item['draw_odds'] ?? item['oddsX']);
     final awayOdds = _safeDouble(item['awayOdds'] ?? item['away_odds'] ?? item['odds2']);
 
+    // Cotes calculées par le modèle ML Python (null si fallback Supabase)
+    final mlHomeOdds = _safeDouble(item['mlHomeOdds'] ?? item['ml_home_odds']);
+    final mlDrawOdds = _safeDouble(item['mlDrawOdds'] ?? item['ml_draw_odds']);
+    final mlAwayOdds = _safeDouble(item['mlAwayOdds'] ?? item['ml_away_odds']);
+
+    // Source : 'ml' = vient du modèle Python, 'supabase' = fallback bookmaker
+    final source = (item['source'] ?? 'supabase').toString();
+    final isFromMl = source == 'ml';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderSubtle),
+        border: Border.all(
+          color: isFromMl
+              ? AppColors.accentGreen.withOpacity(0.35)
+              : context.borderSubtle,
+          width: isFromMl ? 1.5 : 1.0,
+        ),
       ),
       child: Column(
         children: [
-          // ── Top: Level badge + Teams ─────────────────────────────────────
+          // ── Top: Teams + Level badge + Source badge ──────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(
@@ -369,6 +383,9 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Badge source : ML (vert) ou Bookmaker (gris)
+                _buildSourceBadge(isFromMl),
+                const SizedBox(width: 6),
                 _buildLevelBadge(level, levelColor),
               ],
             ),
@@ -457,37 +474,136 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
           ),
           const SizedBox(height: 14),
 
-          // ── Odds row ─────────────────────────────────────────────────────
+          // ── Cotes Bookmaker ───────────────────────────────────────────────
           if (homeOdds > 0 || drawOdds > 0 || awayOdds > 0)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-              child: Row(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildOddsBox(
-                    label: '1',
-                    value: homeOdds,
-                    color: const Color(0xFF4A90E2),
-                    flex: 1,
+                  Text(
+                    'BOOKMAKER ODDS',
+                    style: AppTextStyles.overline.copyWith(
+                      color: context.textSecondary,
+                      fontSize: 9,
+                      letterSpacing: 1.5,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _buildOddsBox(
-                    label: 'X',
-                    value: drawOdds,
-                    color: AppColors.accentOrange,
-                    flex: 1,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildOddsBox(
-                    label: '2',
-                    value: awayOdds,
-                    color: const Color(0xFF9D4EDD),
-                    flex: 1,
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _buildOddsBox(
+                        label: '1',
+                        value: homeOdds,
+                        color: const Color(0xFF4A90E2),
+                        flex: 1,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildOddsBox(
+                        label: 'X',
+                        value: drawOdds,
+                        color: AppColors.accentOrange,
+                        flex: 1,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildOddsBox(
+                        label: '2',
+                        value: awayOdds,
+                        color: const Color(0xFF9D4EDD),
+                        flex: 1,
+                      ),
+                    ],
                   ),
                 ],
               ),
-            )
-          else
-            const SizedBox(height: 14),
+            ),
+
+          // ── Cotes ML (uniquement si viennent du modèle Python) ────────────
+          if (isFromMl && (mlHomeOdds > 0 || mlDrawOdds > 0 || mlAwayOdds > 0))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.psychology_rounded,
+                          color: AppColors.accentGreen, size: 11),
+                      const SizedBox(width: 4),
+                      Text(
+                        'ML MODEL ODDS',
+                        style: AppTextStyles.overline.copyWith(
+                          color: AppColors.accentGreen,
+                          fontSize: 9,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _buildOddsBox(
+                        label: '1',
+                        value: mlHomeOdds,
+                        color: AppColors.accentGreen,
+                        flex: 1,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildOddsBox(
+                        label: 'X',
+                        value: mlDrawOdds,
+                        color: AppColors.accentGreen,
+                        flex: 1,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildOddsBox(
+                        label: '2',
+                        value: mlAwayOdds,
+                        color: AppColors.accentGreen,
+                        flex: 1,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 14),
+        ],
+      ),
+    );
+  }
+
+  // ── Badge source ML / Bookmaker ───────────────────────────────────────────
+  Widget _buildSourceBadge(bool isFromMl) {
+    final color =
+        isFromMl ? AppColors.accentGreen : const Color(0xFFA0A4B8);
+    final label = isFromMl ? 'ML' : 'BK';
+    final icon =
+        isFromMl ? Icons.psychology_rounded : Icons.bar_chart_rounded;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.35), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 9),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: AppTextStyles.overline.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 8,
+              letterSpacing: 0.5,
+            ),
+          ),
         ],
       ),
     );

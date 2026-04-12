@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/models/wallet.dart';
-import 'package:footsmart_pro/core/services/api_service.dart';
+import 'package:footsmart_pro/core/services/api_service.dart'
+    show ApiException, ApiService;
+import 'package:footsmart_pro/core/services/auth_service.dart';
 import 'package:footsmart_pro/core/services/stripe_service.dart';
 import 'package:footsmart_pro/core/services/wallet_service.dart';
+import 'package:footsmart_pro/widgets/stripe_hosted_setup_page.dart';
 import 'package:intl/intl.dart';
 
 class PaymentMethodsScreen extends StatefulWidget {
@@ -32,6 +35,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   }
 
   Future<void> _initData() async {
+    await AuthService(ApiService()).syncTokenToApi();
     await Future.wait([
       _refreshSavedCards(),
       _refreshWalletTransactions(),
@@ -78,11 +82,24 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     if (_stripeLoading) return;
     setState(() => _stripeLoading = true);
     try {
+      await AuthService(ApiService()).syncTokenToApi();
       final stripeService = StripeService(ApiService());
-      final completed = await stripeService.addCardWithPaymentSheet();
-      if (!completed) {
+      // Page Stripe Checkout (HTTPS) : la carte est enregistrée sur le même Customer que le Dashboard.
+      final checkoutUrl = await stripeService.createHostedSetupCheckoutUrl();
+      if (!mounted) return;
+
+      final sessionId = await Navigator.of(context).push<String?>(
+        MaterialPageRoute<String?>(
+          fullscreenDialog: true,
+          builder: (ctx) => StripeHostedSetupPage(initialUrl: checkoutUrl),
+        ),
+      );
+
+      if (sessionId == null || sessionId.isEmpty) {
         return;
       }
+
+      await Future<void>.delayed(const Duration(milliseconds: 600));
       await _refreshSavedCards();
       await _refreshWalletTransactions();
       if (!mounted) return;
@@ -91,8 +108,14 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      final text = e is ApiException
+          ? _stripeUserMessage(e.message)
+          : 'Stripe : $e';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Stripe : $e')),
+        SnackBar(
+          content: Text(text),
+          duration: const Duration(seconds: 8),
+        ),
       );
     } finally {
       if (mounted) setState(() => _stripeLoading = false);
@@ -110,6 +133,18 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       case WalletTransactionType.win:
         return 'Gain';
     }
+  }
+
+  static String _stripeUserMessage(String raw) {
+    if (raw.contains('Invalid API Key') ||
+        raw.contains('clé secrète Stripe') ||
+        raw.contains('STRIPE_SECRET_KEY')) {
+      return 'Le serveur utilise une clé secrète Stripe refusée (401). '
+          'Dans le Dashboard Stripe (mode test) › Développeurs › Clés API, '
+          'révélez ou régénérez la clé secrète, collez-la dans STRIPE_SECRET_KEY du fichier .env du backend, '
+          'puis redémarrez l’API.';
+    }
+    return raw;
   }
 
   static String _formatTxAmount(WalletTransaction t) {

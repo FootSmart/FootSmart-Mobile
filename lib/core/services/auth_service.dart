@@ -82,17 +82,12 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_rememberMeKey, rememberMe);
 
-    // Store user data as JSON string
+    // Toujours persister le JWT : sinon [syncTokenToApi] / hot restart n’ont rien à charger → 401 sur wallet.
+    // « Se souvenir de moi » reste une préférence (UI / futur), pas une raison d’effacer le token.
     final userJson = authResponse.user.toJson();
-    if (rememberMe) {
-      await prefs.setString(_tokenKey, authResponse.accessToken);
-      await prefs.setString(_userKey, jsonEncode(userJson));
-    } else {
-      await prefs.remove(_tokenKey);
-      await prefs.remove(_userKey);
-    }
+    await prefs.setString(_tokenKey, authResponse.accessToken);
+    await prefs.setString(_userKey, jsonEncode(userJson));
 
-    // Update API service with the token
     _apiService.setAuthToken(authResponse.accessToken);
   }
 
@@ -133,18 +128,19 @@ class AuthService {
     _apiService.clearAuthToken();
   }
 
+  /// Remet le JWT dans [ApiService] depuis le stockage (ex. après hot restart Flutter :
+  /// le singleton perd la mémoire mais le token peut rester dans SharedPreferences).
+  Future<void> syncTokenToApi() async {
+    final token = await getToken();
+    if (token != null && token.isNotEmpty) {
+      _apiService.setAuthToken(token);
+    }
+  }
+
   /// Initialize auth state - call on app startup
   Future<void> initializeAuth() async {
     final prefs = await SharedPreferences.getInstance();
-    final rememberMe = prefs.getBool(_rememberMeKey) ?? true;
     final token = prefs.getString(_tokenKey);
-
-    if (!rememberMe) {
-      await prefs.remove(_tokenKey);
-      await prefs.remove(_userKey);
-      _apiService.clearAuthToken();
-      return;
-    }
 
     if (token != null && token.isNotEmpty) {
       _apiService.setAuthToken(token);

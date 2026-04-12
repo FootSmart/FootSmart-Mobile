@@ -6,9 +6,11 @@ import '../../core/extensions/theme_context.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/models/wallet.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/services/stripe_service.dart';
 import '../../core/services/wallet_service.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/stripe_hosted_setup_page.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -37,10 +39,29 @@ class _WalletScreenState extends State<WalletScreen> {
   void initState() {
     super.initState();
     _walletService = WalletService(ApiService());
-    _loadWalletData();
+    _bootstrapWallet();
+  }
+
+  Future<void> _bootstrapWallet() async {
+    await _loadWalletData();
   }
 
   Future<void> _loadWalletData() async {
+    final auth = AuthService(ApiService());
+    await auth.syncTokenToApi();
+    final token = await auth.getToken();
+    if (token == null || token.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _balanceError =
+              'Session absente. Connectez-vous pour accéder au portefeuille.';
+          _transactionsError = _balanceError;
+          _isLoadingBalance = false;
+          _isLoadingTransactions = false;
+        });
+      }
+      return;
+    }
     await Future.wait([
       _loadBalance(),
       _loadTransactions(),
@@ -95,7 +116,8 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
-  /// Dépôt réel via Stripe (PaymentIntent) — le crédit wallet est fait côté serveur par webhook.
+  /// Dépôt via **Stripe Checkout** (Customer) : montant saisi ici, puis cartes enregistrées sur la page Stripe.
+  /// Crédit wallet par webhook (`checkout.session.completed` / `payment_intent.succeeded`).
   Future<void> _handleDeposit(double amount) async {
     if (amount < 0.5) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -112,26 +134,38 @@ class _WalletScreenState extends State<WalletScreen> {
     setState(() => _isProcessingDeposit = true);
 
     try {
+      await AuthService(ApiService()).syncTokenToApi();
       final stripe = StripeService(ApiService());
-      final completed = await stripe.depositWithPaymentSheet(amount: amount);
+      final checkoutUrl = await stripe.createHostedDepositCheckoutUrl(
+        amount: amount,
+      );
       if (!mounted) return;
-      if (!completed) {
+
+      final sessionId = await Navigator.of(context).push<String?>(
+        MaterialPageRoute<String?>(
+          builder: (ctx) => StripeHostedSetupPage(
+            initialUrl: checkoutUrl,
+            returnUrlContains: 'hosted-deposit-return',
+            appBarTitle: 'Paiement sécurisé (Stripe)',
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+      if (sessionId == null || sessionId.isEmpty) {
         setState(() => _isProcessingDeposit = false);
         return;
       }
 
-      // Le webhook `payment_intent.succeeded` crédite le wallet (quelques secondes max).
-      await Future<void>.delayed(const Duration(seconds: 2));
-      await _loadWalletData();
-      await Future<void>.delayed(const Duration(seconds: 2));
+      await stripe.completeCheckoutDeposit(sessionId: sessionId);
       await _loadWalletData();
 
       if (mounted) {
         setState(() => _isProcessingDeposit = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              'Paiement Stripe réussi — solde mis à jour (vérifie aussi Stripe Dashboard › Paiements).',
+              'La transaction s’est effectuée avec succès, c’est tout.',
             ),
             backgroundColor: AppColors.success,
           ),
@@ -308,11 +342,33 @@ class _WalletScreenState extends State<WalletScreen> {
                     strokeWidth: 2,
                   )
                 else if (_balanceError != null)
-                  Text(
-                    'Error loading balance',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.error,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Error loading balance',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _balanceError!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primaryDark.withValues(alpha: 0.85),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: _loadWalletData,
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: const Text('Réessayer'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
                   )
                 else
                   RichText(
@@ -418,9 +474,19 @@ class _WalletScreenState extends State<WalletScreen> {
                     color: AppColors.error,
                   ),
                 ),
+                if (_transactionsError != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _transactionsError!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: context.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 ElevatedButton(
-                  onPressed: _loadTransactions,
+                  onPressed: _loadWalletData,
                   child: const Text('Retry'),
                 ),
               ],
@@ -486,7 +552,10 @@ class _WalletScreenState extends State<WalletScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _AmountField(controller: _depositController),
+                    _AmountField(
+                      controller: _depositController,
+                      onTextChanged: () => setModalState(() {}),
+                    ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
@@ -548,12 +617,22 @@ class _WalletScreenState extends State<WalletScreen> {
                     onPressed: _isProcessingDeposit
                         ? null
                         : () async {
-                            final amount =
-                                double.tryParse(_depositController.text);
-                            if (amount != null && amount > 0) {
+                            final raw = _depositController.text
+                                .trim()
+                                .replaceAll(',', '.');
+                            final amount = double.tryParse(raw);
+                            if (amount != null && amount >= 0.5) {
                               Navigator.pop(dialogContext);
                               await _handleDeposit(amount);
                               _depositController.clear();
+                            } else if (amount != null && amount > 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Minimum 0,50 \$ (Stripe mode test).',
+                                  ),
+                                ),
+                              );
                             }
                           },
                     style: ElevatedButton.styleFrom(
@@ -625,7 +704,10 @@ class _WalletScreenState extends State<WalletScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _AmountField(controller: _withdrawController),
+                    _AmountField(
+                      controller: _withdrawController,
+                      onTextChanged: () => setModalState(() {}),
+                    ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
@@ -804,14 +886,19 @@ class _TransactionCard extends StatelessWidget {
 }
 
 class _AmountField extends StatelessWidget {
-  const _AmountField({required this.controller});
+  const _AmountField({
+    required this.controller,
+    this.onTextChanged,
+  });
 
   final TextEditingController controller;
+  final VoidCallback? onTextChanged;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      onChanged: (_) => onTextChanged?.call(),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       style: AppTextStyles.bodyLarge,
       decoration: InputDecoration(

@@ -113,13 +113,22 @@ class TransactionsResponse {
   });
 
   factory TransactionsResponse.fromJson(Map<String, dynamic> json) {
+    int asInt(dynamic v, [int fallback = 0]) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return fallback;
+    }
+
+    final raw = json['transactions'];
+    final list = raw is List<dynamic> ? raw : <dynamic>[];
+
     return TransactionsResponse(
-      transactions: (json['transactions'] as List<dynamic>)
+      transactions: list
           .map((t) => WalletTransaction.fromJson(t as Map<String, dynamic>))
           .toList(),
-      total: json['total'] as int,
-      limit: json['limit'] as int,
-      offset: json['offset'] as int,
+      total: asInt(json['total']),
+      limit: asInt(json['limit'], 50),
+      offset: asInt(json['offset']),
     );
   }
 

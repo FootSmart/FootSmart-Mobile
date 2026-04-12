@@ -142,6 +142,18 @@ class ApiService {
     }
   }
 
+  static String _messageFromResponseData(dynamic data) {
+    if (data == null) return 'Server error occurred';
+    if (data is String) return data.isEmpty ? 'Server error occurred' : data;
+    if (data is Map) {
+      final m = data['message'];
+      if (m is String) return m;
+      if (m is List && m.isNotEmpty) return m.first.toString();
+      return data['error']?.toString() ?? 'Server error occurred';
+    }
+    return 'Server error occurred';
+  }
+
   /// Handle API errors
   void _handleError(DioException error) {
     switch (error.type) {
@@ -152,8 +164,7 @@ class ApiService {
             'Connection timeout. Please check your internet connection.');
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
-        final message =
-            error.response?.data['message'] ?? 'Server error occurred';
+        final message = _messageFromResponseData(error.response?.data);
         throw ApiException('Error $statusCode: $message');
       case DioExceptionType.cancel:
         throw ApiException('Request was cancelled');

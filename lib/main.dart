@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
@@ -11,6 +12,14 @@ import 'core/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Même clé que STRIPE_PUBLISHABLE_KEY (Dashboard, mode test). Optionnel si fournie par l’API.
+  // Ex. : flutter run --dart-define=STRIPE_PUBLISHABLE_KEY=pk_test_...
+  const pkFromBuild = String.fromEnvironment('STRIPE_PUBLISHABLE_KEY');
+  if (pkFromBuild.isNotEmpty) {
+    Stripe.publishableKey = pkFromBuild;
+    await Stripe.instance.applySettings();
+  }
 
   // Lock device orientation to portrait
   await SystemChrome.setPreferredOrientations([

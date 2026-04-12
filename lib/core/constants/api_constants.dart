@@ -75,6 +75,13 @@ class ApiConstants {
 
   // ─── Payments (Stripe) ────────────────────────────────────────────────────
   static const String stripeSetupIntent = '/payments/stripe/setup-intent';
+  /// Checkout hébergé Stripe (recommandé si le SDK natif ne joint pas api.stripe.com).
+  static const String stripeCheckoutSetup = '/payments/stripe/checkout-setup';
+  /// Dépôt wallet : Checkout avec Customer (cartes enregistrées sur stripe.com).
+  static const String stripeCheckoutDeposit = '/payments/stripe/checkout-deposit';
+  static const String stripeCompleteCheckoutDeposit =
+      '/payments/stripe/complete-checkout-deposit';
+  static const String stripeCompleteSetup = '/payments/stripe/complete-setup';
   static const String stripeDepositIntent = '/payments/stripe/deposit-intent';
   static const String stripePaymentMethods = '/payments/stripe/payment-methods';
 
