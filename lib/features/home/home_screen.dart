@@ -29,6 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _matchesLoading = true;
   String? _matchesError;
 
+  final TextEditingController _matchSearchController = TextEditingController();
+  final FocusNode _matchSearchFocus = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +39,92 @@ class _HomeScreenState extends State<HomeScreen> {
     _leagueService = LeagueService(api);
     _matchService = MatchService(api);
     _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    _matchSearchController.dispose();
+    _matchSearchFocus.dispose();
+    super.dispose();
+  }
+
+  /// Filtre local sur la liste déjà chargée (équipes, ligue, lieu, statut…).
+  List<FootballMatch> get _filteredMatches {
+    final q = _matchSearchController.text.trim().toLowerCase();
+    if (q.isEmpty) return _upcomingMatches;
+
+    bool contains(String? s) =>
+        s != null && s.toLowerCase().contains(q);
+
+    return _upcomingMatches.where((m) {
+      final dateStr = m.matchDate != null
+          ? '${m.matchDate!.day}/${m.matchDate!.month}/${m.matchDate!.year}'
+          : '';
+      return contains(m.leagueName) ||
+          contains(m.leagueCountry) ||
+          contains(m.homeTeam.name) ||
+          contains(m.homeTeam.shortName) ||
+          contains(m.awayTeam.name) ||
+          contains(m.awayTeam.shortName) ||
+          contains(m.venue) ||
+          contains(m.status) ||
+          dateStr.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  Widget _buildMatchSearchField(BuildContext context) {
+    final hasText = _matchSearchController.text.isNotEmpty;
+
+    return TextField(
+      controller: _matchSearchController,
+      focusNode: _matchSearchFocus,
+      onChanged: (_) => setState(() {}),
+      style: AppTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+      cursorColor: context.accent,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Rechercher un match…',
+        hintStyle: AppTextStyles.bodySmall.copyWith(
+          color: context.textSecondary,
+        ),
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          color: context.accent,
+          size: 22,
+        ),
+        suffixIcon: hasText
+            ? IconButton(
+                tooltip: 'Effacer',
+                onPressed: () {
+                  _matchSearchController.clear();
+                  setState(() {});
+                  _matchSearchFocus.unfocus();
+                },
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: context.textSecondary,
+                  size: 20,
+                ),
+              )
+            : null,
+        filled: true,
+        fillColor: context.cardBg,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        isDense: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: context.borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: context.borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: context.accent, width: 1.5),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadInitialData() async {
@@ -203,6 +292,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 12),
 
+                _buildMatchSearchField(context),
+
+                const SizedBox(height: 12),
+
                 // League filter chips
                 SizedBox(
                   height: 36,
@@ -319,14 +412,36 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   )
+                else if (_filteredMatches.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.search_off_rounded,
+                            color: context.textSecondary,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Aucun match ne correspond à votre recherche',
+                            style: AppTextStyles.bodySmall
+                                .copyWith(color: context.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 else
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _upcomingMatches.length,
+                    itemCount: _filteredMatches.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 16),
                     itemBuilder: (context, index) {
-                      final match = _upcomingMatches[index];
+                      final match = _filteredMatches[index];
                       return _UpcomingMatchCard(
                         match: match,
                         onTap: () => Navigator.pushNamed(
