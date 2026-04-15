@@ -195,6 +195,7 @@ class _WalletScreenState extends State<WalletScreen> {
         // Update balance locally
         _balance = WalletBalance(
           balance: result.transaction.newBalance,
+          points: _balance?.points ?? 0,
           currency: _balance?.currency ?? 'USD',
         );
 
@@ -285,6 +286,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Widget _buildHeader() {
     final balance = _balance?.balance ?? 0.0;
+    final points = _balance?.points ?? 0;
     final balanceWhole = balance.floor();
     final balanceDecimal = ((balance - balanceWhole) * 100).round();
 
@@ -330,7 +332,7 @@ class _WalletScreenState extends State<WalletScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Available Balance',
+                  'Points (for betting)',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.primaryDark.withValues(alpha: 0.75),
                   ),
@@ -379,10 +381,10 @@ class _WalletScreenState extends State<WalletScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                       children: [
-                        TextSpan(text: '\$$balanceWhole'),
-                        TextSpan(
-                          text: '.${balanceDecimal.toString().padLeft(2, '0')}',
-                          style: const TextStyle(
+                        TextSpan(text: '$points'),
+                        const TextSpan(
+                          text: ' pts',
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w500,
                           ),
@@ -390,6 +392,13 @@ class _WalletScreenState extends State<WalletScreen> {
                       ],
                     ),
                   ),
+                const SizedBox(height: 16),
+                Text(
+                  '\$${balanceWhole.toString()}.${balanceDecimal.toString().padLeft(2, '0')} (balance)',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.primaryDark.withValues(alpha: 0.75),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -544,120 +553,105 @@ class _WalletScreenState extends State<WalletScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
               title: Text(
-                'Deposit Funds',
+                'Buy Points',
                 style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
               ),
               content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _AmountField(
-                      controller: _depositController,
-                      onTextChanged: () => setModalState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [25, 50, 100, 200]
-                          .map(
-                            (amount) => _AmountChip(
-                              label: '\$$amount',
-                              onTap: () => setModalState(
-                                () =>
-                                    _depositController.text = amount.toString(),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Le montant sera débité via Stripe (visible dans Dashboard › Paiements, mode test).',
-                      style: AppTextStyles.caption
-                          .copyWith(color: const Color(0xFFA0A4B8)),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Payment Method',
-                      style: AppTextStyles.bodySmall
-                          .copyWith(color: const Color(0xFFA0A4B8)),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF252B3D),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.transparent, width: 2),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Credit/Debit Card',
-                              style: AppTextStyles.bodyMedium),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Instant deposit',
-                            style: AppTextStyles.caption
-                                .copyWith(color: const Color(0xFFA0A4B8)),
+                child: FutureBuilder<List<PointsPack>>(
+                  future: _walletService.getPointsPacks(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Error loading packs',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                      );
+                    }
+
+                    final packs = snapshot.data ?? [];
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: packs.map((pack) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _PointsPackCard(
+                            pack: pack,
+                            onTap: () async {
+                              Navigator.pop(dialogContext);
+                              await _handleBuyPointsPack(pack.id);
+                            },
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
+                        );
+                      }).toList(),
+                    );
+                  },
                 ),
               ),
-              actions: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isProcessingDeposit
-                        ? null
-                        : () async {
-                            final raw = _depositController.text
-                                .trim()
-                                .replaceAll(',', '.');
-                            final amount = double.tryParse(raw);
-                            if (amount != null && amount >= 0.5) {
-                              Navigator.pop(dialogContext);
-                              await _handleDeposit(amount);
-                              _depositController.clear();
-                            } else if (amount != null && amount > 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Minimum 0,50 \$ (Stripe mode test).',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0B1220),
-                      backgroundColor: AppColors.accentGreen,
-                    ),
-                    child: _isProcessingDeposit
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF0B1220),
-                            ),
-                          )
-                        : Text(
-                            'Deposit \$${_depositController.text.isEmpty ? '0' : _depositController.text}'),
-                  ),
-                ),
-              ],
             );
           },
         );
       },
     );
+  }
+
+  Future<void> _handleBuyPointsPack(String packId) async {
+    setState(() => _isProcessingDeposit = true);
+
+    try {
+      await AuthService(ApiService()).syncTokenToApi();
+      final checkoutUrl = await _walletService.buyPointsPack(packId: packId);
+      if (!mounted) return;
+
+      final sessionId = await Navigator.of(context).push<String?>(
+        MaterialPageRoute<String?>(
+          builder: (ctx) => StripeHostedSetupPage(
+            initialUrl: checkoutUrl,
+            returnUrlContains: 'hosted-deposit-return',
+            appBarTitle: 'Paiement sécurisé (Stripe)',
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (sessionId == null || sessionId.isEmpty) {
+        setState(() => _isProcessingDeposit = false);
+        return;
+      }
+
+      // Ensure points are credited even if hosted return page couldn't process credit.
+      await _walletService.completePointsPackPurchase(sessionId);
+
+      await _loadWalletData();
+
+      setState(() => _isProcessingDeposit = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Points ajoutés avec succès !'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessingDeposit = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _showWithdrawDialog() async {
@@ -944,6 +938,76 @@ class _AmountChip extends StatelessWidget {
         child: Text(
           label,
           style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+}
+
+class _PointsPackCard extends StatelessWidget {
+  const _PointsPackCard({required this.pack, required this.onTap});
+
+  final PointsPack pack;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF252B3D),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF3D4256)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.accentGreen.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.stars_rounded,
+                color: AppColors.accentGreen,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pack.label,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  if (pack.bonus > 0)
+                    Text(
+                      '+${pack.bonus} bonus',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.accentGreen,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Text(
+              '\$${pack.price.toStringAsFixed(2)}',
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.accentGreen,
+              ),
+            ),
+          ],
         ),
       ),
     );

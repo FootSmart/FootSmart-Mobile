@@ -130,7 +130,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.success,
         content: Text(
-          'Bet placed: ${placedBet.bet.selectionLabel} • Remaining balance ${placedBet.balanceAfter.toStringAsFixed(2)} USD',
+          'Bet placed: ${placedBet.bet.selectionLabel} • Remaining points ${placedBet.pointsAfter} pts',
         ),
       ),
     );

@@ -1,23 +1,32 @@
 /// Wallet balance model
 class WalletBalance {
   final double balance;
+  final int points;
   final String currency;
 
   WalletBalance({
     required this.balance,
+    required this.points,
     required this.currency,
   });
 
   factory WalletBalance.fromJson(Map<String, dynamic> json) {
-    // Parse balance - handle both string and number formats
     double parseBalance(dynamic value) {
       if (value is num) return value.toDouble();
       if (value is String) return double.parse(value);
       return 0.0;
     }
 
+    int parsePoints(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.parse(value);
+      return 0;
+    }
+
     return WalletBalance(
       balance: parseBalance(json['balance']),
+      points: parsePoints(json['points']),
       currency: json['currency'] as String? ?? 'USD',
     );
   }
@@ -25,6 +34,7 @@ class WalletBalance {
   Map<String, dynamic> toJson() {
     return {
       'balance': balance,
+      'points': points,
       'currency': currency,
     };
   }
@@ -209,5 +219,41 @@ class TransactionDetail {
       'newBalance': newBalance,
       'createdAt': createdAt.toIso8601String(),
     };
+  }
+}
+
+class PointsPack {
+  final String id;
+  final double price;
+  final int points;
+  final int bonus;
+  final int totalPoints;
+  final String label;
+
+  PointsPack({
+    required this.id,
+    required this.price,
+    required this.points,
+    required this.bonus,
+    required this.totalPoints,
+    required this.label,
+  });
+
+  factory PointsPack.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic v) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+
+    return PointsPack(
+      id: json['id'] as String,
+      price: (json['price'] as num).toDouble(),
+      points: parseInt(json['points']),
+      bonus: parseInt(json['bonus']),
+      totalPoints: parseInt(json['totalPoints']),
+      label: json['label'] as String,
+    );
   }
 }

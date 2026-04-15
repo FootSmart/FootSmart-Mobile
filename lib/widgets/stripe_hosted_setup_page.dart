@@ -28,6 +28,7 @@ class _StripeHostedSetupPageState extends State<StripeHostedSetupPage> {
   late final WebViewController _controller;
   var _loading = true;
   var _didFinish = false;
+  String? _webError;
 
   bool _isReturnUrl(String url) => url.contains(widget.returnUrlContains);
 
@@ -43,6 +44,25 @@ class _StripeHostedSetupPageState extends State<StripeHostedSetupPage> {
       _didFinish = true;
       Navigator.of(context).pop<String?>(uri.queryParameters['session_id']);
     }
+  }
+
+  Future<void> _retry() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _webError = null;
+    });
+    await _controller.loadRequest(Uri.parse(widget.initialUrl));
+  }
+
+  static String _prettyWebError(WebResourceError e) {
+    final desc = (e.description).trim();
+    final code = e.errorCode;
+    final type = e.errorType.toString();
+    if (desc.isEmpty) {
+      return 'Erreur WebView (code $code, $type).';
+    }
+    return 'Erreur de chargement (code $code): $desc';
   }
 
   @override
@@ -64,6 +84,13 @@ class _StripeHostedSetupPageState extends State<StripeHostedSetupPage> {
             if (mounted) setState(() => _loading = false);
             _tryFinishFromUrl(url);
           },
+          onWebResourceError: (WebResourceError error) {
+            if (!mounted) return;
+            setState(() {
+              _loading = false;
+              _webError = _prettyWebError(error);
+            });
+          },
         ),
       )
       ..loadRequest(Uri.parse(widget.initialUrl));
@@ -84,6 +111,62 @@ class _StripeHostedSetupPageState extends State<StripeHostedSetupPage> {
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
+          if (_webError != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0B1220).withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF252B3D)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Impossible d’ouvrir Stripe',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _webError!,
+                        style: const TextStyle(
+                          color: Color(0xFFA0A4B8),
+                          fontSize: 13,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Astuce: si vous êtes sur téléphone réel, `10.0.2.2` ne fonctionne pas. '
+                        'Utilisez l’IP LAN du PC pour l’API et PUBLIC_BASE_URL côté backend.',
+                        style: TextStyle(
+                          color: Color(0xFFA0A4B8),
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.accentGreen,
+                          foregroundColor: const Color(0xFF0B1220),
+                        ),
+                        onPressed: _retry,
+                        child: const Text('Réessayer'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           if (_loading)
             const Center(
               child: CircularProgressIndicator(color: AppColors.accentGreen),

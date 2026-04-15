@@ -29,6 +29,76 @@ class WalletService {
     }
   }
 
+  /// Get available points packs
+  Future<List<PointsPack>> getPointsPacks() async {
+    try {
+      final response = await _apiService.get(ApiConstants.pointsPacks);
+
+      if (response.statusCode == 200) {
+        final data = response.data as List<dynamic>;
+        return data
+            .map((p) => PointsPack.fromJson(p as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw ApiException('Failed to fetch points packs');
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to fetch points packs: ${e.toString()}');
+    }
+  }
+
+  /// Buy a points pack via Stripe Checkout
+  Future<String> buyPointsPack(
+      {required String packId, String currency = 'usd'}) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.buyPointsPack,
+        data: {'packId': packId, 'currency': currency},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data as Map<String, dynamic>;
+        final url = data['url'] as String?;
+        if (url == null || url.isEmpty) {
+          throw ApiException('Failed to get checkout URL');
+        }
+        return url;
+      } else {
+        throw ApiException('Failed to buy points pack');
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to buy points pack: ${e.toString()}');
+    }
+  }
+
+  /// Complete points pack purchase after Stripe return
+  Future<int> completePointsPackPurchase(String sessionId) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.completePointsPack,
+        data: {'sessionId': sessionId},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data as Map<String, dynamic>;
+        return data['newPoints'] as int? ?? 0;
+      } else {
+        throw ApiException('Failed to complete purchase');
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to complete purchase: ${e.toString()}');
+    }
+  }
+
   /// Get all wallet transactions
   ///
   /// [limit] - Maximum number of transactions to retrieve (default: 50)

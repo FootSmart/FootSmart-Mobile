@@ -3,10 +3,12 @@ import 'package:intl/intl.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/models/bet.dart';
 import 'package:footsmart_pro/core/models/match.dart';
+import 'package:footsmart_pro/core/models/wallet.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/services/bet_service.dart';
 import 'package:footsmart_pro/core/services/match_service.dart';
+import 'package:footsmart_pro/core/services/wallet_service.dart';
 import 'package:footsmart_pro/core/extensions/theme_context.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
@@ -20,6 +22,7 @@ class BettingScreen extends StatefulWidget {
 class _BettingScreenState extends State<BettingScreen> {
   late final MatchService _matchService;
   late final BetService _betService;
+  late final WalletService _walletService;
   final NumberFormat _money =
       NumberFormat.currency(symbol: '\$', decimalDigits: 2);
   final TextEditingController _stakeController =
@@ -40,6 +43,7 @@ class _BettingScreenState extends State<BettingScreen> {
   String? _oddsError;
 
   double _stake = 20;
+  int _points = 0;
 
   @override
   void initState() {
@@ -47,7 +51,20 @@ class _BettingScreenState extends State<BettingScreen> {
     final api = ApiService();
     _matchService = MatchService(api);
     _betService = BetService(api);
+    _walletService = WalletService(api);
     _loadMatches();
+    _loadPoints();
+  }
+
+  Future<void> _loadPoints() async {
+    try {
+      final balance = await _walletService.getBalance();
+      if (mounted) {
+        setState(() {
+          _points = balance.points;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -203,8 +220,8 @@ class _BettingScreenState extends State<BettingScreen> {
     if (lower.contains('no odds found')) {
       return 'Odds are not available for this match yet.';
     }
-    if (lower.contains('insufficient balance')) {
-      return 'You do not have enough wallet balance.';
+    if (lower.contains('insufficient points')) {
+      return 'You do not have enough points.';
     }
     return raw.replaceFirst('Exception: ', '');
   }
@@ -258,6 +275,16 @@ class _BettingScreenState extends State<BettingScreen> {
       return;
     }
 
+    if (_points < _stake) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Insufficient points. You have $_points pts.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isPlacingBet = true;
     });
@@ -270,6 +297,10 @@ class _BettingScreenState extends State<BettingScreen> {
       );
 
       if (!mounted) return;
+
+      setState(() {
+        _points = result.pointsAfter;
+      });
 
       showModalBottomSheet<void>(
         context: context,
@@ -310,7 +341,7 @@ class _BettingScreenState extends State<BettingScreen> {
               Divider(color: context.borderSubtle, height: 1),
               const SizedBox(height: 8),
               _sheetRow(
-                  context, 'Balance now', _money.format(result.balanceAfter),
+                  context, 'Points remaining', '${result.pointsAfter} pts',
                   emphasize: true),
               const SizedBox(height: 14),
               SizedBox(
@@ -541,6 +572,31 @@ class _BettingScreenState extends State<BettingScreen> {
                     subtitle: 'Type, tap preset, or slide to set amount',
                   ),
                   const SizedBox(height: 10),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: context.accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.stars_rounded,
+                            color: context.accent, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Available: $_points pts',
+                          style: TextStyle(
+                            color: context.accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   _StakePanel(
                     stakeController: _stakeController,
                     stake: _stake,
@@ -598,11 +654,12 @@ class _BettingScreenState extends State<BettingScreen> {
           _ActionBar(
             disabled: _selectedOdds == null ||
                 _selectedMatch == null ||
-                _isPlacingBet,
+                _isPlacingBet ||
+                _points < _stake,
             placing: _isPlacingBet,
             buttonLabel: _selectedOdds == null
                 ? 'Odds Unavailable'
-                : 'Place ${_money.format(_stake)} • Win ${_money.format(_potentialPayout)}',
+                : 'Bet ${_stake.toInt()} pts • Win ${_potentialPayout.toInt()} pts',
             onPlace: _placeBet,
           ),
         ],

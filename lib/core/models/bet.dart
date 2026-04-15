@@ -174,23 +174,24 @@ class PlaceBetResult {
   final bool success;
   final String message;
   final PlacedBet bet;
-  final double balanceBefore;
-  final double balanceAfter;
-  final double debited;
+  final int pointsBefore;
+  final int pointsAfter;
+  final int debited;
 
   const PlaceBetResult({
     required this.success,
     required this.message,
     required this.bet,
-    required this.balanceBefore,
-    required this.balanceAfter,
+    required this.pointsBefore,
+    required this.pointsAfter,
     required this.debited,
   });
 
   factory PlaceBetResult.fromJson(Map<String, dynamic> json) {
-    double parseNum(dynamic value) {
-      if (value is num) return value.toDouble();
-      if (value is String) return double.tryParse(value) ?? 0;
+    int parseNum(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
       return 0;
     }
 
@@ -200,8 +201,8 @@ class PlaceBetResult {
       success: json['success'] as bool? ?? false,
       message: json['message'] as String? ?? 'Bet placed',
       bet: PlacedBet.fromJson(json['bet'] as Map<String, dynamic>),
-      balanceBefore: parseNum(wallet['balanceBefore']),
-      balanceAfter: parseNum(wallet['balanceAfter']),
+      pointsBefore: parseNum(wallet['pointsBefore']),
+      pointsAfter: parseNum(wallet['pointsAfter']),
       debited: parseNum(wallet['debited']),
     );
   }

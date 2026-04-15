@@ -2,9 +2,18 @@
 class ApiConstants {
   ApiConstants._();
 
-  // Base URL - For Android emulator use 10.0.2.2, for iOS simulator use localhost
-  // For physical device, use your computer's actual IP address
-  static const String baseUrl = 'http://10.0.2.2:3008/api';
+  /// Base URL
+  ///
+  /// - Android émulateur: `http://10.0.2.2:3008/api`
+  /// - iOS simulateur: `http://localhost:3008/api`
+  /// - Téléphone réel: `http://<IP_LAN_DU_PC>:3008/api`
+  ///
+  /// Vous pouvez surcharger via:
+  /// `flutter run --dart-define=API_BASE_URL=http://<IP>:3008/api`
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.0.2.2:3008/api',
+  );
 
   // API Version
   static const String apiVersion = 'v1';
@@ -75,15 +84,24 @@ class ApiConstants {
 
   // ─── Payments (Stripe) ────────────────────────────────────────────────────
   static const String stripeSetupIntent = '/payments/stripe/setup-intent';
+
   /// Checkout hébergé Stripe (recommandé si le SDK natif ne joint pas api.stripe.com).
   static const String stripeCheckoutSetup = '/payments/stripe/checkout-setup';
+
   /// Dépôt wallet : Checkout avec Customer (cartes enregistrées sur stripe.com).
-  static const String stripeCheckoutDeposit = '/payments/stripe/checkout-deposit';
+  static const String stripeCheckoutDeposit =
+      '/payments/stripe/checkout-deposit';
   static const String stripeCompleteCheckoutDeposit =
       '/payments/stripe/complete-checkout-deposit';
   static const String stripeCompleteSetup = '/payments/stripe/complete-setup';
   static const String stripeDepositIntent = '/payments/stripe/deposit-intent';
   static const String stripePaymentMethods = '/payments/stripe/payment-methods';
+
+  /// Points packs
+  static const String pointsPacks = '/payments/points-packs';
+  static const String buyPointsPack = '/payments/stripe/buy-points-pack';
+  static const String completePointsPack =
+      '/payments/stripe/complete-points-pack';
 
   // ─── Analytics ───────────────────────────────────────────────────────────
   static const String analytics = '/analytics';
