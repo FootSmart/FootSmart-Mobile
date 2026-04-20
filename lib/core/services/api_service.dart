@@ -165,7 +165,10 @@ class ApiService {
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
         final message = _messageFromResponseData(error.response?.data);
-        throw ApiException('Error $statusCode: $message');
+        throw ApiException(
+          'Error $statusCode: $message',
+          statusCode: statusCode,
+        );
       case DioExceptionType.cancel:
         throw ApiException('Request was cancelled');
       case DioExceptionType.connectionError:
@@ -179,8 +182,9 @@ class ApiService {
 /// Custom API exception
 class ApiException implements Exception {
   final String message;
+  final int? statusCode;
 
-  ApiException(this.message);
+  ApiException(this.message, {this.statusCode});
 
   @override
   String toString() => message;

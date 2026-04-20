@@ -194,4 +194,32 @@ class WalletService {
       throw ApiException('Failed to withdraw funds: ${e.toString()}');
     }
   }
+
+  /// Withdraw by converting points to USD automatically.
+  ///
+  /// Example conversion target: 500 points -> 4.99 USD.
+  Future<TransactionResult> withdrawPoints(int points) async {
+    if (points <= 0) {
+      throw ApiException('Points to withdraw must be positive');
+    }
+
+    try {
+      final response = await _apiService.post(
+        ApiConstants.walletWithdraw,
+        data: {'points': points},
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return TransactionResult.fromJson(
+            response.data as Map<String, dynamic>);
+      } else {
+        throw ApiException('Failed to withdraw points');
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to withdraw points: ${e.toString()}');
+    }
+  }
 }

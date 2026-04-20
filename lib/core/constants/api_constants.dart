@@ -4,15 +4,20 @@ class ApiConstants {
 
   /// Base URL
   ///
-  /// - Android émulateur: `http://10.0.2.2:3008/api`
-  /// - iOS simulateur: `http://localhost:3008/api`
-  /// - Téléphone réel: `http://<IP_LAN_DU_PC>:3008/api`
+    /// - Android émulateur: `http://10.0.2.2:3001/api`
+    /// - iOS simulateur: `http://localhost:3001/api`
+    /// - Téléphone réel: `http://<IP_LAN_DU_PC>:3001/api`
   ///
   /// Vous pouvez surcharger via:
-  /// `flutter run --dart-define=API_BASE_URL=http://<IP>:3008/api`
+    /// `flutter run --dart-define=API_BASE_URL=http://<IP>:3001/api`
+ // static const String baseUrl = String.fromEnvironment(
+   // 'API_BASE_URL',
+   // defaultValue: 'http://10.0.2.2:3001/api',
+  //);
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3008/api',
+    defaultValue: 'http://192.168.1.186:3001/api',
+    // defaultValueEMULATOR: 'http://10.0.2.2:3001/api',
   );
 
   // API Version

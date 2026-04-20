@@ -184,6 +184,8 @@ class TransactionDetail {
   final String type;
   final double amount;
   final double newBalance;
+  final int? newPoints;
+  final int? withdrawnPoints;
   final DateTime createdAt;
 
   TransactionDetail({
@@ -191,6 +193,8 @@ class TransactionDetail {
     required this.type,
     required this.amount,
     required this.newBalance,
+    this.newPoints,
+    this.withdrawnPoints,
     required this.createdAt,
   });
 
@@ -207,6 +211,16 @@ class TransactionDetail {
       type: json['type'] as String,
       amount: parseAmount(json['amount']),
       newBalance: parseAmount(json['newBalance']),
+      newPoints: (json['newPoints'] is num)
+          ? (json['newPoints'] as num).toInt()
+          : (json['newPoints'] is String
+              ? int.tryParse(json['newPoints'] as String)
+              : null),
+      withdrawnPoints: (json['withdrawnPoints'] is num)
+          ? (json['withdrawnPoints'] as num).toInt()
+          : (json['withdrawnPoints'] is String
+              ? int.tryParse(json['withdrawnPoints'] as String)
+              : null),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
@@ -217,6 +231,8 @@ class TransactionDetail {
       'type': type,
       'amount': amount,
       'newBalance': newBalance,
+      'newPoints': newPoints,
+      'withdrawnPoints': withdrawnPoints,
       'createdAt': createdAt.toIso8601String(),
     };
   }

@@ -118,6 +118,32 @@ class AuthService {
     return token != null && token.isNotEmpty;
   }
 
+  /// Validate that the persisted token is still accepted by backend.
+  ///
+  /// This avoids navigating to authenticated screens with a stale token,
+  /// which would immediately cause 401/Unauthorized errors after app restart.
+  Future<bool> hasValidSession() async {
+    await syncTokenToApi();
+
+    final token = await getToken();
+    if (token == null || token.isEmpty) {
+      return false;
+    }
+
+    try {
+      await _apiService.get(ApiConstants.profile);
+      return true;
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 401) {
+        await logout();
+        return false;
+      }
+
+      // Keep local session on transient failures (offline/server hiccups).
+      return true;
+    }
+  }
+
   /// Logout - clear all stored data
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();

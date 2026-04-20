@@ -99,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     final authService = AuthService(ApiService());
-    final isLoggedIn = await authService.isLoggedIn();
+    final isLoggedIn = await authService.hasValidSession();
     if (!mounted) return;
 
     final prefs = await SharedPreferences.getInstance();

@@ -29,6 +29,20 @@ class ProfileService {
     return _getUserLocally();
   }
 
+  /// Fetch current user profile strictly from backend (database-backed).
+  ///
+  /// Unlike [getCurrentUser], this method does not fallback to local cache.
+  Future<User> getCurrentUserFromDatabase() async {
+    final response = await _apiService.get(ApiConstants.profile);
+    if (response.statusCode == 200) {
+      final user = User.fromJson(response.data as Map<String, dynamic>);
+      await _saveUserLocally(user);
+      return user;
+    }
+
+    throw ApiException('Failed to fetch user from database');
+  }
+
   /// Fetch user stats from backend
   Future<UserStats?> getUserStats() async {
     try {

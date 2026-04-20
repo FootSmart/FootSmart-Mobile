@@ -20,6 +20,8 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  static const double _usdPerPoint = 4.99 / 500.0;
+
   late final WalletService _walletService;
   final TextEditingController _depositController = TextEditingController();
   final TextEditingController _withdrawController = TextEditingController();
@@ -184,30 +186,38 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
-  Future<void> _handleWithdraw(double amount) async {
+  double _usdFromPoints(int points) {
+    if (points <= 0) return 0;
+    return double.parse((points * _usdPerPoint).toStringAsFixed(2));
+  }
+
+  Future<void> _handleWithdrawPoints(int points) async {
     setState(() => _isProcessingWithdraw = true);
 
     try {
-      final result = await _walletService.withdraw(amount);
+      final result = await _walletService.withdrawPoints(points);
       if (mounted) {
         setState(() => _isProcessingWithdraw = false);
 
         // Update balance locally
         _balance = WalletBalance(
           balance: result.transaction.newBalance,
-          points: _balance?.points ?? 0,
+          points: result.transaction.newPoints ?? (_balance?.points ?? 0),
           currency: _balance?.currency ?? 'USD',
         );
 
         // Reload transactions
         await _loadTransactions();
 
+        final usdAmount = _usdFromPoints(points);
+
         // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content:
-                  Text('Successfully withdrew \$${amount.toStringAsFixed(2)}'),
+              content: Text(
+                'Successfully withdrew $points pts (\$${usdAmount.toStringAsFixed(2)})',
+              ),
               backgroundColor: AppColors.success,
             ),
           );
@@ -331,11 +341,41 @@ class _WalletScreenState extends State<WalletScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Points (for betting)',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.primaryDark.withValues(alpha: 0.75),
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Points (for betting)',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primaryDark.withValues(alpha: 0.75),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    InkWell(
+                      onTap: _showPointsHintDialog,
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryDark.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color:
+                                AppColors.primaryDark.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '?',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.bold,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 if (_isLoadingBalance)
@@ -455,9 +495,22 @@ class _WalletScreenState extends State<WalletScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Transaction History',
-          style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Text(
+              'Transaction History',
+              style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: _showPointsHintDialog,
+              icon: const Icon(Icons.help_outline_rounded, size: 18),
+              color: context.textSecondary,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Points help',
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         if (_isLoadingTransactions)
@@ -542,12 +595,117 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
+  Future<void> _showPointsHintDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1F2E),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.stars_rounded, color: AppColors.accentGreen),
+              const SizedBox(width: 8),
+              Text(
+                'Points Help',
+                style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'How it works:',
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '- Points are used for bets.\n'
+                  '- Bet transactions decrease points.\n'
+                  '- Win transactions increase points.\n'
+                  '- The amount in history is shown in USD.',
+                  style: AppTextStyles.bodySmall
+                      .copyWith(color: dialogContext.textSecondary),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Money per point (from current packs):',
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                FutureBuilder<List<PointsPack>>(
+                  future: _walletService.getPointsPacks(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError || (snapshot.data ?? []).isEmpty) {
+                      return Text(
+                        'Open "Buy Points" to see exact conversion for each pack.',
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: dialogContext.textSecondary),
+                      );
+                    }
+
+                    final packs = snapshot.data!;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: packs.map((pack) {
+                        final total = pack.totalPoints <= 0 ? 1 : pack.totalPoints;
+                        final perPoint = pack.price / total;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            '- ${pack.totalPoints} pts for \$${pack.price.toStringAsFixed(2)} '
+                            '(${perPoint.toStringAsFixed(4)} / point)',
+                            style: AppTextStyles.bodySmall
+                                .copyWith(color: dialogContext.textSecondary),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _showDepositDialog() async {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            final availablePoints = _balance?.points ?? 0;
+            final requestedPoints =
+                int.tryParse(_withdrawController.text.trim()) ?? 0;
+            final usdAmount = _usdFromPoints(requestedPoints);
+
             return AlertDialog(
               backgroundColor: const Color(0xFF1A1F2E),
               shape: RoundedRectangleBorder(
@@ -660,6 +818,11 @@ class _WalletScreenState extends State<WalletScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            final availablePoints = _balance?.points ?? 0;
+            final requestedPoints =
+                int.tryParse(_withdrawController.text.trim()) ?? 0;
+            final usdAmount = _usdFromPoints(requestedPoints);
+
             return AlertDialog(
               backgroundColor: const Color(0xFF1A1F2E),
               shape: RoundedRectangleBorder(
@@ -684,15 +847,21 @@ class _WalletScreenState extends State<WalletScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Available Balance',
+                            'Available Points',
                             style: AppTextStyles.bodySmall
                                 .copyWith(color: const Color(0xFFA0A4B8)),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '\$${(_balance?.balance ?? 0.0).toStringAsFixed(2)}',
+                            '$availablePoints pts',
                             style: AppTextStyles.h3
                                 .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Auto conversion: 500 pts = \$4.99',
+                            style: AppTextStyles.caption
+                                .copyWith(color: const Color(0xFFA0A4B8)),
                           ),
                         ],
                       ),
@@ -700,16 +869,25 @@ class _WalletScreenState extends State<WalletScreen> {
                     const SizedBox(height: 12),
                     _AmountField(
                       controller: _withdrawController,
+                      hintText: 'Points to withdraw',
+                      prefixText: 'pts ',
+                      decimal: false,
                       onTextChanged: () => setModalState(() {}),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'You will receive about \$${usdAmount.toStringAsFixed(2)}',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: const Color(0xFFA0A4B8)),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: [50, 100, 200]
+                      children: [100, 250, 500]
                           .map(
                         (amount) => _AmountChip(
-                          label: '\$$amount',
+                          label: '$amount pts',
                           onTap: () => setModalState(
                             () => _withdrawController.text = amount.toString(),
                           ),
@@ -720,7 +898,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           label: 'All',
                           onTap: () => setModalState(
                             () => _withdrawController.text =
-                                (_balance?.balance ?? 0.0).toStringAsFixed(2),
+                                (_balance?.points ?? 0).toString(),
                           ),
                         ),
                       ]).toList(),
@@ -735,11 +913,22 @@ class _WalletScreenState extends State<WalletScreen> {
                     onPressed: _isProcessingWithdraw
                         ? null
                         : () async {
-                            final amount =
-                                double.tryParse(_withdrawController.text);
-                            if (amount != null && amount > 0) {
+                            final points =
+                                int.tryParse(_withdrawController.text.trim());
+                            final availablePoints = _balance?.points ?? 0;
+                            if (points != null && points > 0) {
+                              if (points > availablePoints) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Insufficient points for withdrawal'),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                                return;
+                              }
                               Navigator.pop(dialogContext);
-                              await _handleWithdraw(amount);
+                              await _handleWithdrawPoints(points);
                               _withdrawController.clear();
                             }
                           },
@@ -757,14 +946,14 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                           )
                         : Text(
-                            'Withdraw \$${_withdrawController.text.isEmpty ? '0' : _withdrawController.text}',
+                            'Withdraw ${_withdrawController.text.isEmpty ? '0' : _withdrawController.text} pts',
                           ),
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    'Withdrawals are processed within 1-3 business days',
+                    'Converted amount is estimated before confirmation',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.caption
                         .copyWith(color: const Color(0xFFA0A4B8)),
@@ -883,21 +1072,27 @@ class _AmountField extends StatelessWidget {
   const _AmountField({
     required this.controller,
     this.onTextChanged,
+    this.hintText = '0.00',
+    this.prefixText = '\$ ',
+    this.decimal = true,
   });
 
   final TextEditingController controller;
   final VoidCallback? onTextChanged;
+  final String hintText;
+  final String prefixText;
+  final bool decimal;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       onChanged: (_) => onTextChanged?.call(),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: TextInputType.numberWithOptions(decimal: decimal),
       style: AppTextStyles.bodyLarge,
       decoration: InputDecoration(
-        hintText: '0.00',
-        prefixText: '\$ ',
+        hintText: hintText,
+        prefixText: prefixText,
         prefixStyle: AppTextStyles.h4.copyWith(color: AppColors.accentGreen),
         hintStyle:
             AppTextStyles.bodyLarge.copyWith(color: const Color(0xFF606060)),
