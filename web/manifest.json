@@ -1,11 +1,11 @@
 {
-    "name": "scfoot_smart",
-    "short_name": "scfoot_smart",
+    "name": "FootSmart Pro",
+    "short_name": "FootSmart",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B1220",
+    "theme_color": "#00FF88",
+    "description": "AI-Powered Football Analytics & Betting Platform — 18+ Only",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

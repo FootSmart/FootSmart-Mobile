@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:footsmart_pro/core/extensions/theme_context.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
@@ -8,7 +9,7 @@ class ExploreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E27),
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -20,23 +21,23 @@ class ExploreScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00D9A3),
+                      color: context.accent,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.explore_outlined,
-                      color: Colors.white,
+                      color: context.textPrimary,
                       size: 24,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Explore',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.textPrimary,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -44,7 +45,7 @@ class ExploreScreen extends StatelessWidget {
                       Text(
                         'Advanced tools & insights',
                         style: TextStyle(
-                          color: Color(0xFF8E92BC),
+                          color: context.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -62,33 +63,46 @@ class ExploreScreen extends StatelessWidget {
                   _buildMenuItem(
                     context,
                     icon: Icons.emoji_events_outlined,
-                    iconColor: const Color(0xFF00D9A3),
+                    iconColor: context.accent,
                     title: 'Competition Hub',
                     subtitle: 'Live standings, fixtures &\nleague analytics',
                     onTap: () {
-                      // Navigate to Competition Hub
+                      Navigator.pushNamed(context, AppRoutes.competitionHub);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.people_alt_rounded,
+                    iconColor: const Color(0xFF6C63FF),
+                    title: 'Players Hub',
+                    subtitle: 'Player stats, rankings &\ngoal / assist charts',
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRoutes.playersHub);
                     },
                   ),
                   const SizedBox(height: 16),
                   _buildMenuItem(
                     context,
                     icon: Icons.timeline,
-                    iconColor: const Color(0xFF00D9A3),
+                    iconColor: context.accent,
                     title: 'Advanced Match Insights',
                     subtitle: 'Deep dive into match statistics\n& patterns',
                     onTap: () {
-                      // Navigate to Advanced Match Insights
+                      Navigator.pushNamed(
+                          context, AppRoutes.advancedMatchInsights);
                     },
                   ),
                   const SizedBox(height: 16),
                   _buildMenuItem(
                     context,
                     icon: Icons.psychology_outlined,
-                    iconColor: const Color(0xFF00D9A3),
+                    iconColor: context.accent,
                     title: 'AI Prediction Center',
                     subtitle: 'Machine learning powered\nmatch predictions',
                     onTap: () {
-                      // Navigate to AI Prediction Center
+                      Navigator.pushNamed(
+                          context, AppRoutes.aiPredictionCenter);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -99,29 +113,32 @@ class ExploreScreen extends StatelessWidget {
                     title: 'Market Movements',
                     subtitle: 'Real-time odds tracking &\nmarket analysis',
                     onTap: () {
-                      // Navigate to Market Movements
+                      Navigator.pushNamed(
+                          context, AppRoutes.marketMovements);
                     },
                   ),
                   const SizedBox(height: 16),
                   _buildMenuItem(
                     context,
                     icon: Icons.bar_chart,
-                    iconColor: const Color(0xFF00D9A3),
+                    iconColor: context.accent,
                     title: 'Analytics Dashboard',
                     subtitle: 'Your betting performance &\nstatistics',
                     onTap: () {
-                      // Navigate to Analytics Dashboard
+                      Navigator.pushNamed(
+                          context, AppRoutes.analyticsDashboard);
                     },
                   ),
                   const SizedBox(height: 16),
                   _buildMenuItem(
                     context,
                     icon: Icons.history,
-                    iconColor: const Color(0xFF00D9A3),
+                    iconColor: context.accent,
                     title: 'Bet History Analytics',
                     subtitle: 'Detailed breakdown of your\nbetting patterns',
                     onTap: () {
-                      // Navigate to Bet History Analytics
+                      Navigator.pushNamed(
+                          context, AppRoutes.betHistoryAnalytics);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -132,7 +149,8 @@ class ExploreScreen extends StatelessWidget {
                     title: 'Strategy Builder',
                     subtitle: 'Create & test betting strategies\nwith AI',
                     onTap: () {
-                      // Navigate to Strategy Builder
+                      Navigator.pushNamed(
+                          context, AppRoutes.strategyBuilder);
                     },
                   ),
                   const SizedBox(height: 100),
@@ -146,9 +164,13 @@ class ExploreScreen extends StatelessWidget {
         currentIndex: 1,
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushReplacementNamed(context, AppRoutes.home);
+            Navigator.pushNamed(context, AppRoutes.home);
           } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, AppRoutes.betting);
+            Navigator.pushNamed(context, AppRoutes.betting);
+          } else if (index == 3) {
+            Navigator.pushNamed(context, AppRoutes.wallet);
+          } else if (index == 4) {
+            Navigator.pushNamed(context, AppRoutes.profile);
           }
         },
       ),
@@ -169,10 +191,10 @@ class ExploreScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1F3A),
+          color: context.cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFF2A2F4A),
+            color: context.borderSubtle,
             width: 1,
           ),
         ),
@@ -181,7 +203,7 @@ class ExploreScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.15),
+                color: iconColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -197,8 +219,8 @@ class ExploreScreen extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -206,8 +228,8 @@ class ExploreScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF8E92BC),
+                    style: TextStyle(
+                      color: context.textSecondary,
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -215,9 +237,9 @@ class ExploreScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right,
-              color: Color(0xFF8E92BC),
+              color: context.iconInactive,
               size: 24,
             ),
           ],

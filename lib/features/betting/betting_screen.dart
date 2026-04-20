@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:footsmart_pro/core/constants/app_colors.dart';
+import 'package:footsmart_pro/core/models/bet.dart';
+import 'package:footsmart_pro/core/models/match.dart';
+import 'package:footsmart_pro/core/models/wallet.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:footsmart_pro/core/services/api_service.dart';
+import 'package:footsmart_pro/core/services/bet_service.dart';
+import 'package:footsmart_pro/core/services/match_service.dart';
+import 'package:footsmart_pro/core/services/wallet_service.dart';
+import 'package:footsmart_pro/core/extensions/theme_context.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
 class BettingScreen extends StatefulWidget {
@@ -10,600 +20,388 @@ class BettingScreen extends StatefulWidget {
 }
 
 class _BettingScreenState extends State<BettingScreen> {
-  String selectedBetType = 'Match Result';
-  String selectedOutcome = 'Man City Win';
-  double selectedOdds = 2.1;
-  int stakeAmount = 10;
+  late final MatchService _matchService;
+  late final BetService _betService;
+  late final WalletService _walletService;
+  final NumberFormat _money =
+      NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+  final TextEditingController _stakeController =
+      TextEditingController(text: '20');
 
-  final List<String> betTypes = [
-    'Match Result',
-    'Over/Under',
-    'Both Teams to Score'
-  ];
+  final List<double> _quickStakes = const [5, 10, 20, 50, 100, 250];
 
-  final List<BetOption> matchResultOptions = [
-    BetOption(label: 'Man City Win', odds: 2.1, isSelected: true),
-    BetOption(label: 'Draw', odds: 3.4, isSelected: false),
-    BetOption(label: 'Liverpool Win', odds: 3.8, isSelected: false),
-  ];
+  List<FootballMatch> _matches = [];
+  FootballMatch? _selectedMatch;
+  MatchOdds? _selectedOdds;
+  BetSelection _selectedSelection = BetSelection.home;
 
-  final List<int> quickStakeAmounts = [5, 10, 25, 50, 100];
+  bool _isMatchesLoading = true;
+  bool _isOddsLoading = false;
+  bool _isPlacingBet = false;
+
+  String? _matchesError;
+  String? _oddsError;
+
+  double _stake = 20;
+  int _points = 0;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0E27),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0E27),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () =>
-              Navigator.pushReplacementNamed(context, AppRoutes.home),
-        ),
-        title: const Text(
-          'Place Bet',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Bet Type Tabs
-                    _buildBetTypeTabs(),
-                    const SizedBox(height: 24),
+  void initState() {
+    super.initState();
+    final api = ApiService();
+    _matchService = MatchService(api);
+    _betService = BetService(api);
+    _walletService = WalletService(api);
+    _loadMatches();
+    _loadPoints();
+  }
 
-                    // Bet Options
-                    _buildBetOptions(),
-                    const SizedBox(height: 32),
+  Future<void> _loadPoints() async {
+    try {
+      final balance = await _walletService.getBalance();
+      if (mounted) {
+        setState(() {
+          _points = balance.points;
+        });
+      }
+    } catch (_) {}
+  }
 
-                    // Stake Amount Section
-                    _buildStakeSection(),
-                    const SizedBox(height: 24),
+  @override
+  void dispose() {
+    _stakeController.dispose();
+    super.dispose();
+  }
 
-                    // Bet Summary
-                    _buildBetSummary(),
-                    const SizedBox(height: 24),
+  Future<void> _loadMatches() async {
+    setState(() {
+      _isMatchesLoading = true;
+      _matchesError = null;
+    });
 
-                    // Warning Message
-                    _buildWarningMessage(),
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
-            ),
-          ),
+    try {
+      final response = await _matchService.getUpcomingMatches(
+        limit: 80,
+        nextGameweek: true,
+      );
 
-          // Confirm Button
-          _buildConfirmButton(),
-        ],
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: 2,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacementNamed(context, AppRoutes.home);
-          } else if (index == 1) {
-            Navigator.pushReplacementNamed(context, AppRoutes.explore);
+      final nextFixtures =
+          response.matches.where((m) => m.isScheduled).toList();
+
+      FootballMatch? selected;
+      if (_selectedMatch != null) {
+        for (final m in nextFixtures) {
+          if (m.id == _selectedMatch!.id) {
+            selected = m;
+            break;
           }
-        },
-      ),
-    );
+        }
+      }
+      selected ??= nextFixtures.isNotEmpty ? nextFixtures.first : null;
+
+      if (!mounted) return;
+
+      setState(() {
+        _matches = nextFixtures;
+        _selectedMatch = selected;
+        _isMatchesLoading = false;
+      });
+
+      if (selected != null) {
+        await _loadOddsForMatch(selected);
+      } else if (mounted) {
+        setState(() {
+          _selectedOdds = null;
+          _oddsError = null;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _matchesError = e.toString();
+        _isMatchesLoading = false;
+      });
+    }
   }
 
-  Widget _buildBetTypeTabs() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: betTypes.map((type) {
-          final isSelected = type == selectedBetType;
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  selectedBetType = type;
-                });
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF00D9A3)
-                      : const Color(0xFF1A1F3A),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF00D9A3)
-                        : const Color(0xFF2A2F4A),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  type,
-                  style: TextStyle(
-                    color: isSelected ? const Color(0xFF0A0E27) : Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
+  Future<void> _loadOddsForMatch(FootballMatch match) async {
+    setState(() {
+      _isOddsLoading = true;
+      _oddsError = null;
+      _selectedOdds = null;
+    });
+
+    try {
+      final odds = await _betService.getMatchOdds(match.id);
+      if (!mounted) return;
+      setState(() {
+        _selectedOdds = odds;
+        _selectedSelection = BetSelection.home;
+        _isOddsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _oddsError = e.toString();
+        _isOddsLoading = false;
+      });
+    }
   }
 
-  Widget _buildBetOptions() {
-    return Column(
-      children: matchResultOptions.map((option) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                for (var opt in matchResultOptions) {
-                  opt.isSelected = false;
-                }
-                option.isSelected = true;
-                selectedOutcome = option.label;
-                selectedOdds = option.odds;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1F3A),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: option.isSelected
-                      ? const Color(0xFF00D9A3)
-                      : const Color(0xFF2A2F4A),
-                  width: option.isSelected ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    option.label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        option.odds.toString(),
-                        style: const TextStyle(
-                          color: Color(0xFF00D9A3),
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (option.isSelected)
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF00D9A3),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            color: Color(0xFF0A0E27),
-                            size: 16,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
+  void _selectMatch(FootballMatch match) {
+    if (_selectedMatch?.id == match.id) return;
+    setState(() {
+      _selectedMatch = match;
+    });
+    _loadOddsForMatch(match);
   }
 
-  Widget _buildStakeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Stake Amount',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+  void _setStake(double value, {bool syncText = true}) {
+    final normalized = value.clamp(1, 10000).toDouble();
+    setState(() {
+      _stake = double.parse(normalized.toStringAsFixed(2));
+    });
+
+    if (syncText) {
+      final text = _stake % 1 == 0
+          ? _stake.toStringAsFixed(0)
+          : _stake.toStringAsFixed(2);
+      _stakeController.text = text;
+    }
+  }
+
+  void _onStakeTyped(String input) {
+    if (input.trim().isEmpty) return;
+    final parsed = double.tryParse(input);
+    if (parsed == null) return;
+    _setStake(parsed, syncText: false);
+  }
+
+  BetSelection _smartSelection(MatchOdds odds) {
+    final scores = {
+      BetSelection.home: odds.homeProb,
+      BetSelection.draw: odds.drawProb,
+      BetSelection.away: odds.awayProb,
+    };
+
+    var best = BetSelection.home;
+    var bestScore = scores[best]!;
+
+    for (final entry in scores.entries) {
+      if (entry.value > bestScore) {
+        best = entry.key;
+        bestScore = entry.value;
+      }
+    }
+
+    return best;
+  }
+
+  String _riskLabel(double odds) {
+    if (odds <= 1.8) return 'Low Risk';
+    if (odds <= 2.7) return 'Medium Risk';
+    return 'High Risk';
+  }
+
+  Color _riskColor(String label) {
+    switch (label) {
+      case 'Low Risk':
+        return AppColors.success;
+      case 'Medium Risk':
+        return AppColors.warning;
+      default:
+        return AppColors.error;
+    }
+  }
+
+  String _shortError(String? raw) {
+    if (raw == null || raw.isEmpty) return 'Could not load data';
+    final lower = raw.toLowerCase();
+    if (lower.contains('no odds found')) {
+      return 'Odds are not available for this match yet.';
+    }
+    if (lower.contains('insufficient points')) {
+      return 'You do not have enough points.';
+    }
+    return raw.replaceFirst('Exception: ', '');
+  }
+
+  String _matchTime(FootballMatch match) {
+    if (match.matchDate != null) {
+      return DateFormat('EEE, d MMM • HH:mm')
+          .format(match.matchDate!.toLocal());
+    }
+    if (match.matchTime != null && match.matchTime!.isNotEmpty) {
+      return match.matchTime!;
+    }
+    return 'Kickoff TBD';
+  }
+
+  String _selectionTitle(BetSelection selection, MatchOdds odds) {
+    switch (selection) {
+      case BetSelection.home:
+        return odds.homeTeam;
+      case BetSelection.draw:
+        return 'Draw';
+      case BetSelection.away:
+        return odds.awayTeam;
+    }
+  }
+
+  double get _selectedOddsValue {
+    if (_selectedOdds == null) return 0;
+    return _selectedOdds!.oddsFor(_selectedSelection);
+  }
+
+  double get _potentialPayout => _stake * _selectedOddsValue;
+
+  Future<void> _placeBet() async {
+    final match = _selectedMatch;
+    final odds = _selectedOdds;
+    if (match == null || odds == null) return;
+
+    if (!match.isScheduled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('This match is no longer open for betting.')),
+      );
+      return;
+    }
+
+    if (_stake <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid stake amount.')),
+      );
+      return;
+    }
+
+    if (_points < _stake) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Insufficient points. You have $_points pts.'),
+          backgroundColor: AppColors.error,
         ),
-        const SizedBox(height: 16),
+      );
+      return;
+    }
 
-        // Amount Input with +/- buttons
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1F3A),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF2A2F4A),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    setState(() {
+      _isPlacingBet = true;
+    });
+
+    try {
+      final result = await _betService.placeBet(
+        matchId: match.id,
+        selection: _selectedSelection,
+        stake: _stake,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _points = result.pointsAfter;
+      });
+
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: context.scaffoldBg,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (_) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (stakeAmount > 5) stakeAmount -= 5;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0A0E27),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.remove,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  const Text(
-                    '\$',
-                    style: TextStyle(
-                      color: Color(0xFF00D9A3),
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    stakeAmount.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    stakeAmount += 5;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0A0E27),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Quick Stake Buttons
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: quickStakeAmounts.map((amount) {
-            final isSelected = amount == stakeAmount;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  stakeAmount = amount;
-                });
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF00D9A3).withOpacity(0.2)
-                      : const Color(0xFF1A1F3A),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF00D9A3)
-                        : const Color(0xFF2A2F4A),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  '\$$amount',
-                  style: TextStyle(
-                    color: isSelected
-                        ? const Color(0xFF00D9A3)
-                        : const Color(0xFF8E92BC),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBetSummary() {
-    final potentialWin = (stakeAmount * selectedOdds).toStringAsFixed(2);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F3A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF2A2F4A),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Stake',
+              const Icon(Icons.verified_rounded,
+                  color: AppColors.success, size: 44),
+              const SizedBox(height: 10),
+              Text(
+                'Bet Confirmed',
                 style: TextStyle(
-                  color: Color(0xFF8E92BC),
+                  color: context.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                result.bet.selectionLabel,
+                style: TextStyle(
+                  color: context.textSecondary,
                   fontSize: 14,
                 ),
               ),
-              Text(
-                '\$$stakeAmount',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(height: 14),
+              _sheetRow(context, 'Stake', _money.format(result.bet.stake)),
+              _sheetRow(context, 'Odds', result.bet.odds.toStringAsFixed(2)),
+              _sheetRow(context, 'Potential payout',
+                  _money.format(result.bet.potentialPayout)),
+              const SizedBox(height: 8),
+              Divider(color: context.borderSubtle, height: 1),
+              const SizedBox(height: 8),
+              _sheetRow(
+                  context, 'Points remaining', '${result.pointsAfter} pts',
+                  emphasize: true),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.accent,
+                    foregroundColor: context.surfaceBg,
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Done'),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Odds',
-                style: TextStyle(
-                  color: Color(0xFF8E92BC),
-                  fontSize: 14,
-                ),
-              ),
-              Text(
-                selectedOdds.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: Color(0xFF2A2F4A), height: 1),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Potential Win',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '\$$potentialWin',
-                style: const TextStyle(
-                  color: Color(0xFF00D9A3),
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+          content: Text(_shortError(e.toString())),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPlacingBet = false;
+        });
+      }
+    }
   }
 
-  Widget _buildWarningMessage() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF8A65).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFFF8A65).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            color: const Color(0xFFFF8A65),
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              'Remember to bet responsibly. Only bet what you can afford to lose.',
-              style: TextStyle(
-                color: Color(0xFFFF8A65),
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfirmButton() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A0E27),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              _showConfirmationDialog();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D9A3),
-              foregroundColor: const Color(0xFF0A0E27),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Confirm Bet - \$$stakeAmount',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1F3A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Confirm Bet',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You are about to place a bet:',
-              style: TextStyle(
-                color: const Color(0xFF8E92BC),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildDetailRow('Outcome', selectedOutcome),
-            _buildDetailRow('Odds', selectedOdds.toString()),
-            _buildDetailRow('Stake', '\$$stakeAmount'),
-            const Divider(color: Color(0xFF2A2F4A), height: 24),
-            _buildDetailRow(
-              'Potential Win',
-              '\$${(stakeAmount * selectedOdds).toStringAsFixed(2)}',
-              isHighlight: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF8E92BC)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showSuccessMessage();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D9A3),
-              foregroundColor: const Color(0xFF0A0E27),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Place Bet'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value,
-      {bool isHighlight = false}) {
+  Widget _sheetRow(BuildContext context, String label, String value,
+      {bool emphasize = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
             style: TextStyle(
-              color: isHighlight ? Colors.white : const Color(0xFF8E92BC),
-              fontSize: isHighlight ? 16 : 14,
-              fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
+              color: context.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              color: isHighlight ? const Color(0xFF00D9A3) : Colors.white,
-              fontSize: isHighlight ? 18 : 14,
-              fontWeight: FontWeight.w600,
+              color: emphasize ? context.accent : context.textPrimary,
+              fontSize: emphasize ? 16 : 14,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -611,29 +409,948 @@ class _BettingScreenState extends State<BettingScreen> {
     );
   }
 
-  void _showSuccessMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Bet placed successfully!'),
-        backgroundColor: const Color(0xFF00D9A3),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.scaffoldBg,
+      appBar: AppBar(
+        backgroundColor: context.scaffoldBg,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
+            }
+          },
+        ),
+        title: Text(
+          'Bet Studio',
+          style: TextStyle(
+            color: context.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: _loadMatches,
+            icon: Icon(Icons.refresh_rounded, color: context.accent),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadMatches,
+              color: context.accent,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),
+                children: [
+                  _HeroPanel(
+                    matchesCount: _matches.length,
+                    isLoading: _isMatchesLoading,
+                    accent: context.accent,
+                    textPrimary: context.textPrimary,
+                    textSecondary: context.textSecondary,
+                    cardBg: context.cardBg,
+                    border: context.borderSubtle,
+                  ),
+                  const SizedBox(height: 20),
+                  const _SectionTitle(
+                    title: '1. Pick Match',
+                    subtitle: 'Next gameweek fixtures only',
+                  ),
+                  const SizedBox(height: 10),
+                  if (_isMatchesLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 18),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_matchesError != null)
+                    _ErrorCard(
+                      message: 'Could not load matches',
+                      detail: _shortError(_matchesError),
+                      onRetry: _loadMatches,
+                    )
+                  else if (_matches.isEmpty)
+                    const _EmptyCard(
+                      message: 'No fixtures found for the next gameweek.',
+                    )
+                  else
+                    SizedBox(
+                      height: 170,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _matches.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (context, index) {
+                          final match = _matches[index];
+                          return _MatchCard(
+                            match: match,
+                            selected: _selectedMatch?.id == match.id,
+                            dateLabel: _matchTime(match),
+                            onTap: () => _selectMatch(match),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  const _SectionTitle(
+                    title: '2. Pick Outcome',
+                    subtitle: 'Live market odds and model probability',
+                  ),
+                  const SizedBox(height: 10),
+                  if (_selectedMatch == null)
+                    const _EmptyCard(message: 'Select a match to continue.')
+                  else if (_isOddsLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_selectedOdds == null)
+                    _ErrorCard(
+                      message: 'Odds unavailable',
+                      detail: _shortError(_oddsError),
+                      onRetry: () {
+                        final selected = _selectedMatch;
+                        if (selected != null) {
+                          _loadOddsForMatch(selected);
+                        }
+                      },
+                    )
+                  else ...[
+                    _SmartTipCard(
+                      odds: _selectedOdds!,
+                      recommended: _smartSelection(_selectedOdds!),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _OutcomeCard(
+                            title: _selectedOdds!.homeTeam,
+                            odds: _selectedOdds!.homeOdds,
+                            probability: _selectedOdds!.homeProb,
+                            selected: _selectedSelection == BetSelection.home,
+                            onTap: () => setState(
+                                () => _selectedSelection = BetSelection.home),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _OutcomeCard(
+                            title: 'Draw',
+                            odds: _selectedOdds!.drawOdds,
+                            probability: _selectedOdds!.drawProb,
+                            selected: _selectedSelection == BetSelection.draw,
+                            onTap: () => setState(
+                                () => _selectedSelection = BetSelection.draw),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _OutcomeCard(
+                            title: _selectedOdds!.awayTeam,
+                            odds: _selectedOdds!.awayOdds,
+                            probability: _selectedOdds!.awayProb,
+                            selected: _selectedSelection == BetSelection.away,
+                            onTap: () => setState(
+                                () => _selectedSelection = BetSelection.away),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  const _SectionTitle(
+                    title: '3. Stake Lab',
+                    subtitle: 'Type, tap preset, or slide to set amount',
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: context.accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.stars_rounded,
+                            color: context.accent, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Available: $_points pts',
+                          style: TextStyle(
+                            color: context.accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _StakePanel(
+                    stakeController: _stakeController,
+                    stake: _stake,
+                    onStakeChanged: _onStakeTyped,
+                    onSliderChanged: (v) => _setStake(v),
+                    quickStakes: _quickStakes,
+                    onQuickStakeTap: (v) => _setStake(v),
+                  ),
+                  const SizedBox(height: 20),
+                  _BetSlipPanel(
+                    hasOdds: _selectedOdds != null,
+                    selectionLabel: _selectedOdds == null
+                        ? 'Select a market'
+                        : _selectionTitle(_selectedSelection, _selectedOdds!),
+                    stakeLabel: _money.format(_stake),
+                    oddsLabel: _selectedOdds == null
+                        ? '-'
+                        : _selectedOddsValue.toStringAsFixed(2),
+                    payoutLabel: _money.format(_potentialPayout),
+                    riskLabel: _riskLabel(_selectedOddsValue),
+                    riskColor: _riskColor(_riskLabel(_selectedOddsValue)),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF8A65).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFFFF8A65).withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            color: Color(0xFFFF8A65), size: 20),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Play smart. Set limits and only bet what you are comfortable losing.',
+                            style: TextStyle(
+                              color: Color(0xFFFF8A65),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _ActionBar(
+            disabled: _selectedOdds == null ||
+                _selectedMatch == null ||
+                _isPlacingBet ||
+                _points < _stake,
+            placing: _isPlacingBet,
+            buttonLabel: _selectedOdds == null
+                ? 'Odds Unavailable'
+                : 'Bet ${_stake.toInt()} pts • Win ${_potentialPayout.toInt()} pts',
+            onPlace: _placeBet,
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 2,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, AppRoutes.home);
+          } else if (index == 1) {
+            Navigator.pushNamed(context, AppRoutes.explore);
+          } else if (index == 3) {
+            Navigator.pushNamed(context, AppRoutes.wallet);
+          } else if (index == 4) {
+            Navigator.pushNamed(context, AppRoutes.profile);
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _HeroPanel extends StatelessWidget {
+  final int matchesCount;
+  final bool isLoading;
+  final Color accent;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color cardBg;
+  final Color border;
+
+  const _HeroPanel({
+    required this.matchesCount,
+    required this.isLoading,
+    required this.accent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.cardBg,
+    required this.border,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accent.withValues(alpha: 0.22),
+            cardBg,
+          ],
+        ),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.auto_graph_rounded, color: accent, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Today\'s Trading Floor',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isLoading
+                      ? 'Syncing next gameweek...'
+                      : '$matchesCount fixtures open for pricing',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Text(
+              'Next GW',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _SectionTitle({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: context.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: TextStyle(
+            color: context.textSecondary,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MatchCard extends StatelessWidget {
+  final FootballMatch match;
+  final bool selected;
+  final String dateLabel;
+  final VoidCallback onTap;
+
+  const _MatchCard({
+    required this.match,
+    required this.selected,
+    required this.dateLabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 240,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected
+              ? context.accent.withValues(alpha: 0.14)
+              : context.cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? context.accent : context.borderSubtle,
+            width: selected ? 1.4 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              match.leagueName ?? 'League',
+              style: TextStyle(
+                color: context.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${match.homeTeam.name} vs ${match.awayTeam.name}',
+              style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Icon(Icons.schedule_rounded,
+                    size: 14, color: context.textSecondary),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    dateLabel,
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// Model class for bet options
-class BetOption {
-  final String label;
-  final double odds;
-  bool isSelected;
+class _SmartTipCard extends StatelessWidget {
+  final MatchOdds odds;
+  final BetSelection recommended;
 
-  BetOption({
-    required this.label,
+  const _SmartTipCard({required this.odds, required this.recommended});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = odds.labelFor(recommended);
+    final probability = odds.probabilityFor(recommended).toStringAsFixed(1);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.bolt_rounded, color: context.accent, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Smart tip: $label looks most probable at $probability%.',
+              style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OutcomeCard extends StatelessWidget {
+  final String title;
+  final double odds;
+  final double probability;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _OutcomeCard({
+    required this.title,
     required this.odds,
-    this.isSelected = false,
+    required this.probability,
+    required this.selected,
+    required this.onTap,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? context.accent.withValues(alpha: 0.16)
+              : context.cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? context.accent : context.borderSubtle,
+            width: selected ? 1.4 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: selected ? context.accent : context.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              odds.toStringAsFixed(2),
+              style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              '${probability.toStringAsFixed(1)}%',
+              style: TextStyle(
+                color: context.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StakePanel extends StatelessWidget {
+  final TextEditingController stakeController;
+  final double stake;
+  final ValueChanged<String> onStakeChanged;
+  final ValueChanged<double> onSliderChanged;
+  final List<double> quickStakes;
+  final ValueChanged<double> onQuickStakeTap;
+
+  const _StakePanel({
+    required this.stakeController,
+    required this.stake,
+    required this.onStakeChanged,
+    required this.onSliderChanged,
+    required this.quickStakes,
+    required this.onQuickStakeTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderSubtle),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: stakeController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: onStakeChanged,
+            style: TextStyle(
+              color: context.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
+            decoration: InputDecoration(
+              prefixText: '\$ ',
+              prefixStyle: TextStyle(
+                color: context.accent,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+              ),
+              hintText: 'Enter stake',
+              hintStyle: TextStyle(color: context.textSecondary),
+              filled: true,
+              fillColor: context.surfaceBg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: context.borderSubtle),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: context.borderSubtle),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: context.accent),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: context.accent,
+              thumbColor: context.accent,
+              inactiveTrackColor: context.borderSubtle,
+              overlayColor: context.accent.withValues(alpha: 0.18),
+            ),
+            child: Slider(
+              value: stake.clamp(1, 1000),
+              min: 1,
+              max: 1000,
+              divisions: 999,
+              label: '\$${stake.toStringAsFixed(0)}',
+              onChanged: onSliderChanged,
+            ),
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: quickStakes
+                .map(
+                  (amount) => GestureDetector(
+                    onTap: () => onQuickStakeTap(amount),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 11, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: (stake - amount).abs() < 0.01
+                            ? context.accent.withValues(alpha: 0.2)
+                            : context.surfaceBg,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: (stake - amount).abs() < 0.01
+                              ? context.accent
+                              : context.borderSubtle,
+                        ),
+                      ),
+                      child: Text(
+                        '\$${amount.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          color: (stake - amount).abs() < 0.01
+                              ? context.accent
+                              : context.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BetSlipPanel extends StatelessWidget {
+  final bool hasOdds;
+  final String selectionLabel;
+  final String stakeLabel;
+  final String oddsLabel;
+  final String payoutLabel;
+  final String riskLabel;
+  final Color riskColor;
+
+  const _BetSlipPanel({
+    required this.hasOdds,
+    required this.selectionLabel,
+    required this.stakeLabel,
+    required this.oddsLabel,
+    required this.payoutLabel,
+    required this.riskLabel,
+    required this.riskColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, color: context.accent, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Live Bet Slip',
+                style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              if (hasOdds)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: riskColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    riskLabel,
+                    style: TextStyle(
+                      color: riskColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _row(context, 'Selection', selectionLabel),
+          _row(context, 'Stake', stakeLabel),
+          _row(context, 'Odds', oddsLabel),
+          const SizedBox(height: 8),
+          Divider(color: context.borderSubtle, height: 1),
+          const SizedBox(height: 8),
+          _row(context, 'Potential payout', payoutLabel, emphasize: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(BuildContext context, String title, String value,
+      {bool emphasize = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: context.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: emphasize ? context.accent : context.textPrimary,
+              fontSize: emphasize ? 16 : 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionBar extends StatelessWidget {
+  final bool disabled;
+  final bool placing;
+  final String buttonLabel;
+  final VoidCallback onPlace;
+
+  const _ActionBar({
+    required this.disabled,
+    required this.placing,
+    required this.buttonLabel,
+    required this.onPlace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      decoration: BoxDecoration(
+        color: context.scaffoldBg,
+        border: Border(top: BorderSide(color: context.borderSubtle)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: disabled ? null : onPlace,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.accent,
+              foregroundColor: context.surfaceBg,
+              disabledBackgroundColor: context.surfaceBg,
+              disabledForegroundColor: context.textSecondary,
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: placing
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: context.surfaceBg,
+                    ),
+                  )
+                : Text(
+                    buttonLabel,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  final String message;
+  final String detail;
+  final VoidCallback onRetry;
+
+  const _ErrorCard({
+    required this.message,
+    required this.detail,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: TextStyle(
+              color: context.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            detail,
+            style: TextStyle(
+              color: context.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyCard extends StatelessWidget {
+  final String message;
+
+  const _EmptyCard({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderSubtle),
+      ),
+      child: Text(
+        message,
+        style: TextStyle(
+          color: context.textSecondary,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
 }

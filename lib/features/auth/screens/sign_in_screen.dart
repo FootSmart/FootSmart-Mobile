@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/extensions/theme_context.dart';
+import '../../../core/models/user.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/theme_service.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -15,6 +21,19 @@ class _SignInScreenState extends State<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _rememberMe = true;
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = AuthService(ApiService());
+    _authService.getRememberMe().then((value) {
+      if (!mounted) return;
+      setState(() => _rememberMe = value);
+    });
+  }
 
   @override
   void dispose() {
@@ -41,7 +60,7 @@ class _SignInScreenState extends State<SignInScreen> {
     return null;
   }
 
-  void _handleSignIn() {
+  Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -50,21 +69,76 @@ class _SignInScreenState extends State<SignInScreen> {
       _isLoading = true;
     });
 
-    // TODO: Implement actual sign in logic
-    Future.delayed(const Duration(seconds: 2), () {
+    // Static coach login for testing
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email == 'coach@coach.com' && password == 'coachcoach') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Welcome back, Coach!'),
+            backgroundColor: context.accentOrange,
+          ),
+        );
+        Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+      }
+      return;
+    }
+
+    try {
+      final loginRequest = LoginRequest(
+        email: email,
+        password: password,
+      );
+
+      final authResponse =
+          await _authService.login(loginRequest, rememberMe: _rememberMe);
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back, ${authResponse.user.displayName}!'),
+            backgroundColor: context.accent,
+          ),
+        );
+
+        // Navigate based on role
+        if (authResponse.user.role == 'coach') {
+          Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
+      }
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().contains('401') ||
+                      e.toString().contains('Unauthorized')
+                  ? 'Invalid email or password'
+                  : 'Login failed. Please try again.',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeService = Provider.of<ThemeService>(context);
+
     return Scaffold(
-      backgroundColor: AppColors.primaryDark,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -73,14 +147,30 @@ class _SignInScreenState extends State<SignInScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 40),
+                // Theme toggle button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    onPressed: () => themeService.toggleTheme(),
+                    icon: Icon(
+                      context.isDark ? Icons.light_mode : Icons.dark_mode,
+                      color: context.accent,
+                      size: 28,
+                    ),
+                    tooltip: context.isDark
+                        ? 'Switch to Light Mode'
+                        : 'Switch to Dark Mode',
+                  ),
+                ),
+
+                const SizedBox(height: 20),
 
                 // Logo
                 Container(
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.accentGreen,
+                    color: context.accent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
@@ -99,6 +189,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   style: AppTextStyles.h1.copyWith(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
+                    color: context.textPrimary,
                   ),
                 ),
 
@@ -108,7 +199,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 Text(
                   'Sign in to continue betting smarter',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textGrey,
+                    color: context.textSecondary,
                   ),
                 ),
 
@@ -122,41 +213,47 @@ class _SignInScreenState extends State<SignInScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Email Address',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       validator: _validateEmail,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'your@email.com',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
+                        fillColor: context.inputBg,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 16,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -175,22 +272,37 @@ class _SignInScreenState extends State<SignInScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Password',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       validator: _validatePassword,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Enter your password',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
-                        suffixIcon: const Icon(
-                          Icons.visibility_off_outlined,
-                          color: AppColors.textGreyDark,
+                        fillColor: context.inputBg,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: context.iconInactive,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -198,22 +310,22 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -224,17 +336,41 @@ class _SignInScreenState extends State<SignInScreen> {
 
                 const SizedBox(height: 12),
 
+                // Remember me
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _rememberMe,
+                      activeColor: context.accent,
+                      onChanged: (v) async {
+                        final next = v ?? true;
+                        setState(() => _rememberMe = next);
+                        await _authService.setRememberMe(next);
+                      },
+                    ),
+                    Text(
+                      'Remember me',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: context.textSecondary,
+                      ),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
                 // Forgot password
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // Navigate to forgot password
+                      Navigator.pushNamed(context, AppRoutes.forgotPassword);
                     },
                     child: Text(
                       'Forgot Password?',
                       style: AppTextStyles.buttonMedium.copyWith(
-                        color: AppColors.accentGreen,
+                        color: context.accent,
                       ),
                     ),
                   ),
@@ -249,30 +385,29 @@ class _SignInScreenState extends State<SignInScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleSignIn,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentGreen,
-                      foregroundColor: AppColors.primaryDark,
-                      disabledBackgroundColor:
-                          AppColors.accentGreen.withOpacity(0.5),
+                      backgroundColor: context.accent,
+                      foregroundColor: context.scaffoldBg,
+                      disabledBackgroundColor: context.accent.withOpacity(0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.primaryDark,
+                                context.scaffoldBg,
                               ),
                             ),
                           )
                         : Text(
                             'Sign In',
                             style: AppTextStyles.buttonLarge.copyWith(
-                              color: AppColors.primaryDark,
+                              color: context.scaffoldBg,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -288,7 +423,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     Text(
                       "Don't have an account? ",
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textGrey,
+                        color: context.textSecondary,
                       ),
                     ),
                     TextButton(
@@ -303,7 +438,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       child: Text(
                         'Sign Up',
                         style: AppTextStyles.buttonMedium.copyWith(
-                          color: AppColors.accentGreen,
+                          color: context.accent,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -319,7 +454,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   child: Text(
                     'By signing in, you confirm you are 18+ and agree to our responsible gambling policies',
                     style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textGreyLight,
+                      color: context.textTertiary,
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
-import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/constants/app_strings.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
+import 'package:footsmart_pro/core/services/api_service.dart';
+import 'package:footsmart_pro/core/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/extensions/theme_context.dart';
 
 /// Splash Screen - First screen user sees when opening the app
 ///
@@ -15,8 +18,8 @@ import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 /// - Progress indicator
 /// - Auto-navigation after 5 seconds
 ///
-/// Design matches the uploaded image:
-/// - Dark navy background
+/// Design:
+/// - Theme-aware background gradient
 /// - Centered green logo with concentric circles
 /// - "FootSmart Pro" title with green "Pro" text
 /// - Tagline below
@@ -39,17 +42,24 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _setupAnimations();
     _navigateToNext();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _setSystemUIOverlay();
   }
 
-  /// Configure status bar and navigation bar colors
+  /// Configure status bar and navigation bar colors (theme-aware)
   void _setSystemUIOverlay() {
+    final isDark = context.isDark;
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
+      SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: AppColors.primaryDark,
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: isDark ? context.scaffoldBg : Colors.white,
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
       ),
     );
   }
@@ -86,9 +96,27 @@ class _SplashScreenState extends State<SplashScreen>
   /// Navigate to next screen after delay
   Future<void> _navigateToNext() async {
     await Future.delayed(const Duration(seconds: 5));
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+    if (!mounted) return;
+
+    final authService = AuthService(ApiService());
+    final isLoggedIn = await authService.hasValidSession();
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
+    if (!mounted) return;
+
+    if (isLoggedIn) {
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      return;
     }
+
+    if (!onboardingSeen) {
+      Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+      return;
+    }
+
+    Navigator.pushReplacementNamed(context, AppRoutes.signIn);
   }
 
   @override
@@ -100,9 +128,9 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryDark,
+      backgroundColor: context.scaffoldBg,
       body: Container(
-        decoration: BoxDecoration(gradient: AppColors.primaryGradient),
+        decoration: BoxDecoration(gradient: context.bgGradient),
         child: SafeArea(
           child: Center(
             child: Column(
@@ -146,7 +174,9 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                   child: Text(
                     AppStrings.appTagline,
-                    style: AppTextStyles.tagline,
+                    style: AppTextStyles.tagline.copyWith(
+                      color: context.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -163,9 +193,9 @@ class _SplashScreenState extends State<SplashScreen>
                         children: [
                           LinearProgressIndicator(
                             value: _progressAnimation.value,
-                            backgroundColor: AppColors.borderDark,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppColors.accentGreen,
+                            backgroundColor: context.borderColor,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              context.accent,
                             ),
                             minHeight: 3,
                             borderRadius: BorderRadius.circular(2),
@@ -193,13 +223,13 @@ class _SplashScreenState extends State<SplashScreen>
           TextSpan(
             text: 'FootSmart ',
             style: AppTextStyles.displayMedium.copyWith(
-              color: AppColors.textWhite,
+              color: context.textPrimary,
             ),
           ),
           TextSpan(
             text: 'Pro',
             style: AppTextStyles.displayMedium.copyWith(
-              color: AppColors.accentGreen,
+              color: context.accent,
             ),
           ),
         ],
@@ -208,63 +238,34 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-/// Custom Logo Widget matching the uploaded image design
-/// Green rounded square with concentric circles (target icon)
+/// Custom Logo Widget using the app logo asset
 class _LogoWidget extends StatelessWidget {
   const _LogoWidget();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120,
-      height: 120,
+      width: 140,
+      height: 140,
       decoration: BoxDecoration(
-        color: AppColors.accentGreen,
-        borderRadius: BorderRadius.circular(28),
+        shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: AppColors.accentGreen.withOpacity(0.3),
+            color: context.accent.withValues(alpha: 0.3),
             blurRadius: 40,
             spreadRadius: 0,
             offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Center(
-        child: CustomPaint(
-          size: const Size(60, 60),
-          painter: _ConcentricCirclesPainter(),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/icons/logorb.png',
+          width: 140,
+          height: 140,
+          fit: BoxFit.cover,
         ),
       ),
     );
   }
-}
-
-/// Custom painter for concentric circles target icon
-class _ConcentricCirclesPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.primaryDark
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5;
-
-    final center = Offset(size.width / 2, size.height / 2);
-
-    // Draw outer circle
-    canvas.drawCircle(center, size.width * 0.45, paint);
-
-    // Draw middle circle
-    canvas.drawCircle(center, size.width * 0.30, paint);
-
-    // Draw inner circle (filled)
-    final fillPaint = Paint()
-      ..color = AppColors.primaryDark
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(center, size.width * 0.15, fillPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

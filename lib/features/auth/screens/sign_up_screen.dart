@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/extensions/theme_context.dart';
+import '../../../core/models/user.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -12,20 +16,58 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _displayNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _dateOfBirthController = TextEditingController();
 
+  String _selectedRole = 'player'; // Default role
+  final _clubNameController = TextEditingController();
+  final _teamCategoryController = TextEditingController();
   bool _isAgeConfirmed = false;
   bool _isTermsAccepted = false;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  late final AuthService _authService;
+
+  final List<String> _teamCategories = [
+    'U13',
+    'U15',
+    'U17',
+    'U18',
+    'U21',
+    'Senior',
+    'Women',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = AuthService(ApiService());
+  }
 
   @override
   void dispose() {
+    _displayNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _dateOfBirthController.dispose();
+    _clubNameController.dispose();
+    _teamCategoryController.dispose();
     super.dispose();
+  }
+
+  String? _validateDisplayName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Display name is required';
+    }
+    if (value.length < 2) {
+      return 'Display name must be at least 2 characters';
+    }
+    return null;
   }
 
   String? _validateEmail(String? value) {
@@ -59,7 +101,51 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return null;
   }
 
-  void _handleSignUp() {
+  String? _validateDateOfBirth(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Date of birth is required';
+    }
+    return null;
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: context.isDark
+                ? ColorScheme.dark(
+                    primary: context.accent,
+                    onPrimary: AppColors.primaryDark,
+                    surface: context.inputBg,
+                    onSurface: context.textPrimary,
+                  )
+                : ColorScheme.light(
+                    primary: context.accent,
+                    onPrimary: Colors.white,
+                    surface: context.inputBg,
+                    onSurface: context.textPrimary,
+                  ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final formattedDate =
+          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      setState(() {
+        _dateOfBirthController.text = formattedDate;
+      });
+    }
+  }
+
+  Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -74,20 +160,70 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
+    // Validate coach-specific fields if coach role selected
+    if (_selectedRole == 'coach' && _teamCategoryController.text.isEmpty) {
+      _showSnackBar('Please select a team category');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
-    // TODO: Implement actual sign up logic
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      final registerRequest = RegisterRequest(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        displayName: _displayNameController.text.trim(),
+        dateOfBirth: _dateOfBirthController.text, // Format: YYYY-MM-DD
+        role: _selectedRole,
+        club: _clubNameController.text.isNotEmpty
+            ? _clubNameController.text.trim()
+            : null,
+      );
+
+      final authResponse = await _authService.register(registerRequest);
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome, ${authResponse.user.displayName}!'),
+            backgroundColor: context.accent,
+          ),
+        );
+
+        // Navigate based on role
+        if (_selectedRole == 'coach') {
+          Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
+      }
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        // Navigate to KYC verification
-        // Navigator.pushReplacementNamed(context, '/kyc');
+
+        // Show error message
+        String errorMessage = 'Registration failed. Please try again.';
+
+        if (e.toString().contains('409') ||
+            e.toString().contains('already exists')) {
+          errorMessage = 'An account with this email already exists';
+        } else if (e.toString().contains('400')) {
+          errorMessage = 'Invalid registration data. Please check your inputs.';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
-    });
+    }
   }
 
   void _showSnackBar(String message) {
@@ -102,7 +238,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryDark,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -120,7 +256,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGreen,
+                        color: context.accent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
@@ -135,6 +271,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       'Create Account',
                       style: AppTextStyles.h2.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
                       ),
                     ),
                   ],
@@ -145,11 +282,70 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Text(
                   'Join FootSmart Pro and start betting smarter',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textGrey,
+                    color: context.textSecondary,
                   ),
                 ),
 
                 const SizedBox(height: 32),
+
+                // Display Name field
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        'Display Name',
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    ),
+                    TextFormField(
+                      controller: _displayNameController,
+                      keyboardType: TextInputType.name,
+                      validator: _validateDisplayName,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'John Doe',
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
+                        filled: true,
+                        fillColor: context.inputBg,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: context.borderColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: context.borderColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: context.accent,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
 
                 // Email field
                 Column(
@@ -159,41 +355,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Email Address',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       validator: _validateEmail,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'your@email.com',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
+                        fillColor: context.inputBg,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 16,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -212,22 +414,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Password',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       validator: _validatePassword,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Create a strong password',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
-                        suffixIcon: const Icon(
-                          Icons.visibility_off_outlined,
-                          color: AppColors.textGreyDark,
+                        fillColor: context.inputBg,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: context.iconInactive,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -235,22 +452,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -269,22 +486,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Confirm Password',
-                        style: AppTextStyles.inputLabel,
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                     TextFormField(
                       controller: _confirmPasswordController,
-                      obscureText: true,
+                      obscureText: _obscureConfirmPassword,
                       validator: _validateConfirmPassword,
-                      style: AppTextStyles.inputText,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Re-enter your password',
-                        hintStyle: AppTextStyles.inputHint,
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
                         filled: true,
-                        fillColor: AppColors.cardBackground,
-                        suffixIcon: const Icon(
-                          Icons.visibility_off_outlined,
-                          color: AppColors.textGreyDark,
+                        fillColor: context.inputBg,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: context.iconInactive,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                            });
+                          },
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -292,22 +524,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderDark,
+                          borderSide: BorderSide(
+                            color: context.borderColor,
                             width: 1.5,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.accentGreen,
+                          borderSide: BorderSide(
+                            color: context.accent,
                             width: 2,
                           ),
                         ),
@@ -315,6 +547,330 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 20),
+
+                // Date of Birth field
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        'Date of Birth',
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    ),
+                    TextFormField(
+                      controller: _dateOfBirthController,
+                      readOnly: true,
+                      onTap: _selectDate,
+                      validator: _validateDateOfBirth,
+                      style: AppTextStyles.inputText.copyWith(
+                        color: context.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Select your date of birth',
+                        hintStyle: AppTextStyles.inputHint.copyWith(
+                          color: context.textHint,
+                        ),
+                        filled: true,
+                        fillColor: context.inputBg,
+                        suffixIcon: Icon(
+                          Icons.calendar_today_outlined,
+                          color: context.iconInactive,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: context.borderColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: context.borderColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: context.accent,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Role selection
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 12),
+                      child: Text(
+                        'I am a',
+                        style: AppTextStyles.inputLabel.copyWith(
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedRole = 'player';
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _selectedRole == 'player'
+                                    ? context.accent.withValues(alpha: 0.15)
+                                    : context.inputBg,
+                                border: Border.all(
+                                  color: _selectedRole == 'player'
+                                      ? context.accent
+                                      : context.borderColor,
+                                  width: _selectedRole == 'player' ? 2 : 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.sports_soccer,
+                                    color: _selectedRole == 'player'
+                                        ? context.accent
+                                        : context.textSecondary,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Player',
+                                    style: AppTextStyles.buttonMedium.copyWith(
+                                      color: _selectedRole == 'player'
+                                          ? context.accent
+                                          : context.textSecondary,
+                                      fontWeight: _selectedRole == 'player'
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedRole = 'coach';
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _selectedRole == 'coach'
+                                    ? context.accentOrange
+                                        .withValues(alpha: 0.15)
+                                    : context.inputBg,
+                                border: Border.all(
+                                  color: _selectedRole == 'coach'
+                                      ? context.accentOrange
+                                      : context.borderColor,
+                                  width: _selectedRole == 'coach' ? 2 : 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.sports,
+                                    color: _selectedRole == 'coach'
+                                        ? context.accentOrange
+                                        : context.textSecondary,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Coach',
+                                    style: AppTextStyles.buttonMedium.copyWith(
+                                      color: _selectedRole == 'coach'
+                                          ? context.accentOrange
+                                          : context.textSecondary,
+                                      fontWeight: _selectedRole == 'coach'
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Coach-specific fields
+                if (_selectedRole == 'coach') ...[
+                  const SizedBox(height: 20),
+
+                  // Club Name field
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'Club / Team Name',
+                          style: AppTextStyles.inputLabel.copyWith(
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ),
+                      TextFormField(
+                        controller: _clubNameController,
+                        keyboardType: TextInputType.text,
+                        validator: _selectedRole == 'coach'
+                            ? (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Club name is required for coaches';
+                                }
+                                return null;
+                              }
+                            : null,
+                        style: AppTextStyles.inputText.copyWith(
+                          color: context.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. FC Barcelona Youth',
+                          hintStyle: AppTextStyles.inputHint.copyWith(
+                            color: context.textHint,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.shield_outlined,
+                            color: context.iconInactive,
+                          ),
+                          filled: true,
+                          fillColor: context.inputBg,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: context.borderColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: context.borderColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: context.accentOrange,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Team Category
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'Team Category',
+                          style: AppTextStyles.inputLabel.copyWith(
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _teamCategories.map((cat) {
+                          final isSelected =
+                              _teamCategoryController.text == cat;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _teamCategoryController.text = cat;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? context.accentOrange
+                                        .withValues(alpha: 0.15)
+                                    : context.inputBg,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? context.accentOrange
+                                      : context.borderColor,
+                                  width: isSelected ? 2 : 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                cat,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: isSelected
+                                      ? context.accentOrange
+                                      : context.textSecondary,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ],
 
                 const SizedBox(height: 24),
 
@@ -339,7 +895,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           border: Border.all(
                             color: _isAgeConfirmed
                                 ? AppColors.accentGreen
-                                : AppColors.textGreyDark,
+                                : context.iconInactive,
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(4),
@@ -357,7 +913,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: Text(
                           'I confirm that I am 18 years or older and legally allowed to gamble in my jurisdiction',
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textGrey,
+                            color: context.textSecondary,
                             height: 1.4,
                           ),
                         ),
@@ -389,7 +945,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           border: Border.all(
                             color: _isTermsAccepted
                                 ? AppColors.accentGreen
-                                : AppColors.textGreyDark,
+                                : context.iconInactive,
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(4),
@@ -407,7 +963,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: RichText(
                           text: TextSpan(
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textGrey,
+                              color: context.textSecondary,
                               height: 1.4,
                             ),
                             children: [
@@ -415,7 +971,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               TextSpan(
                                 text: 'Terms of Service',
                                 style: TextStyle(
-                                  color: AppColors.accentGreen,
+                                  color: context.accent,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -423,7 +979,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               TextSpan(
                                 text: 'Privacy Policy',
                                 style: TextStyle(
-                                  color: AppColors.accentGreen,
+                                  color: context.accent,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -444,30 +1000,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleSignUp,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentGreen,
-                      foregroundColor: AppColors.primaryDark,
+                      backgroundColor: context.accent,
+                      foregroundColor:
+                          context.isDark ? AppColors.primaryDark : Colors.white,
                       disabledBackgroundColor:
-                          AppColors.accentGreen.withOpacity(0.5),
+                          context.accent.withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.primaryDark,
+                                context.isDark
+                                    ? AppColors.primaryDark
+                                    : Colors.white,
                               ),
                             ),
                           )
                         : Text(
                             'Create Account',
                             style: AppTextStyles.buttonLarge.copyWith(
-                              color: AppColors.primaryDark,
+                              color: context.isDark
+                                  ? AppColors.primaryDark
+                                  : Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -483,12 +1044,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     Text(
                       'Already have an account? ',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textGrey,
+                        color: context.textSecondary,
                       ),
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushReplacementNamed(context, AppRoutes.signIn);
+                        Navigator.pushReplacementNamed(
+                            context, AppRoutes.signIn);
                       },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
@@ -498,7 +1060,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       child: Text(
                         'Sign In',
                         style: AppTextStyles.buttonMedium.copyWith(
-                          color: AppColors.accentGreen,
+                          color: context.accent,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
