@@ -396,18 +396,18 @@ class _CoachPerfectPlayerScreenState extends State<CoachPerfectPlayerScreen> {
   void _onNavTap(BuildContext context, int index) {
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+        AppRoutes.replace(context, AppRoutes.coachHome);
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, AppRoutes.coachTactics);
+        AppRoutes.replace(context, AppRoutes.coachTactics);
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, AppRoutes.coachLiveConsole);
+        AppRoutes.replace(context, AppRoutes.coachLiveConsole);
         break;
       case 3:
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.profile);
+        AppRoutes.push(context, AppRoutes.profile);
         break;
     }
   }

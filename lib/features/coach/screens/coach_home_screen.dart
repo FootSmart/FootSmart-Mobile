@@ -121,16 +121,16 @@ class _CoachHomeScreenState extends State<CoachHomeScreen> {
       case 0:
         break; // Already here
       case 1:
-        Navigator.pushNamed(context, AppRoutes.coachTactics);
+        AppRoutes.push(context, AppRoutes.coachTactics);
         break;
       case 2:
-        Navigator.pushNamed(context, AppRoutes.coachLiveConsole);
+        AppRoutes.push(context, AppRoutes.coachLiveConsole);
         break;
       case 3:
-        Navigator.pushNamed(context, AppRoutes.coachPerfectPlayer);
+        AppRoutes.push(context, AppRoutes.coachPerfectPlayer);
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.profile);
+        AppRoutes.push(context, AppRoutes.profile);
         break;
     }
   }
@@ -550,7 +550,7 @@ class _QuickActionsGrid extends StatelessWidget {
       childAspectRatio: 1.6,
       children: actions.map((action) {
         return GestureDetector(
-          onTap: () => Navigator.pushNamed(context, action.route),
+          onTap: () => AppRoutes.push(context, action.route),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

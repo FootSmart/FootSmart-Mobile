@@ -173,11 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             onPressed: () async {
                               await _profileService.clearCache();
                               if (!context.mounted) return;
-                              Navigator.pushNamedAndRemoveUntil(
-                                context,
-                                AppRoutes.signIn,
-                                (route) => false,
-                              );
+                              AppRoutes.clearAndGo(context, AppRoutes.signIn);
                             },
                           ),
                           const SizedBox(height: 20),
@@ -200,13 +196,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         currentIndex: 4,
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushNamed(context, AppRoutes.home);
+            AppRoutes.push(context, AppRoutes.home);
           } else if (index == 1) {
-            Navigator.pushNamed(context, AppRoutes.explore);
+            AppRoutes.push(context, AppRoutes.explore);
           } else if (index == 2) {
-            Navigator.pushNamed(context, AppRoutes.betting);
+            AppRoutes.push(context, AppRoutes.betting);
           } else if (index == 3) {
-            Navigator.pushNamed(context, AppRoutes.wallet);
+            AppRoutes.push(context, AppRoutes.wallet);
           }
         },
       ),
@@ -214,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _onMenuTap(BuildContext context, _ProfileMenuItem item) {
-    Navigator.of(context).pushNamed(item.route);
+    AppRoutes.push(context, item.route);
   }
 }
 

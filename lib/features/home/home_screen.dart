@@ -3,11 +3,17 @@ import '../../core/routes/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/extensions/theme_context.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/models/league.dart';
 import '../../core/models/match.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/league_service.dart';
 import '../../core/services/match_service.dart';
+import '../../shared/widgets/app_badge.dart';
+import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/app_skeleton.dart';
+import '../../shared/widgets/app_text.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -190,54 +196,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: context.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Stack(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: context.cardBg,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.notifications_outlined,
-                            color: context.iconColor,
-                            size: 24,
-                          ),
-                        ),
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: context.accentOrange,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: context.cardBg,
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                _HomeHero(
+                  selectedLeagueLabel: _selectedLeagueId == null
+                      ? 'All leagues'
+                      : 'Focused league',
+                  onNotificationsTap: () =>
+                      AppRoutes.push(context, AppRoutes.notifications),
                 ),
 
                 const SizedBox(height: 24),
@@ -249,20 +213,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const AppText(
                           'Upcoming Matches',
-                          style: AppTextStyles.h3.copyWith(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          variant: AppTextVariant.h2,
+                          fontWeight: FontWeight.w700,
                         ),
-                        Text(
+                        AppText(
                           _selectedLeagueId == null
                               ? 'Next gameweek across leagues'
                               : 'Next gameweek for selected league',
-                          style: AppTextStyles.caption.copyWith(
-                            color: context.textSecondary,
-                          ),
+                          variant: AppTextVariant.caption,
+                          tone: AppTextTone.secondary,
                         ),
                       ],
                     ),
@@ -300,13 +261,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(
                   height: 36,
                   child: _leaguesLoading
-                      ? Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: context.accent,
+                      ? ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: 5,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: AppSpacing.sm),
+                          itemBuilder: (_, __) => const AppSkeleton(
+                            width: 92,
+                            height: 32,
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(AppRadius.full),
                             ),
                           ),
                         )
@@ -361,8 +325,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Upcoming matches list
                 if (_matchesLoading)
                   const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(child: CircularProgressIndicator()),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                    child: Column(
+                      children: [
+                        AppSkeleton.card(),
+                        SizedBox(height: AppSpacing.sm),
+                        AppSkeleton.card(),
+                      ],
+                    ),
                   )
                 else if (_matchesError != null)
                   Padding(
@@ -444,10 +414,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       final match = _filteredMatches[index];
                       return _UpcomingMatchCard(
                         match: match,
-                        onTap: () => Navigator.pushNamed(
+                        onTap: () => AppRoutes.push(
                           context,
                           AppRoutes.matchDetail,
-                          arguments: match,
+                          extra: match,
                         ),
                       );
                     },
@@ -463,13 +433,13 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: 0,
         onTap: (index) {
           if (index == 1) {
-            Navigator.pushNamed(context, AppRoutes.explore);
+            AppRoutes.push(context, AppRoutes.explore);
           } else if (index == 2) {
-            Navigator.pushNamed(context, AppRoutes.betting);
+            AppRoutes.push(context, AppRoutes.betting);
           } else if (index == 3) {
-            Navigator.pushNamed(context, AppRoutes.wallet);
+            AppRoutes.push(context, AppRoutes.wallet);
           } else if (index == 4) {
-            Navigator.pushNamed(context, AppRoutes.profile);
+            AppRoutes.push(context, AppRoutes.profile);
           }
         },
       ),
@@ -485,155 +455,207 @@ class _UpcomingMatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppCard(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.cardBg,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            // League and Risk
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    match.leagueName ?? 'Unknown League',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: context.textSecondary,
-                      fontWeight: FontWeight.w600,
+      elevated: true,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: AppText(
+                  match.leagueName ?? 'Unknown League',
+                  variant: AppTextVariant.caption,
+                  tone: AppTextTone.secondary,
+                  fontWeight: FontWeight.w600,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              AppBadge(
+                label: match.matchDate != null
+                    ? '${match.matchDate!.day}/${match.matchDate!.month}/${match.matchDate!.year}'
+                    : (match.matchTime ?? 'TBD'),
+                variant: AppBadgeVariant.neutral,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    _TeamLogo(logoUrl: match.homeTeam.logo, size: 56),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppText(
+                      match.homeTeam.shortName ?? match.homeTeam.name,
+                      variant: AppTextVariant.h3,
+                      fontWeight: FontWeight.w700,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  match.matchDate != null
-                      ? '${match.matchDate!.day}/${match.matchDate!.month}/${match.matchDate!.year}'
-                      : (match.matchTime ?? 'TBD'),
-                  style: AppTextStyles.caption.copyWith(
-                    color: context.textSecondary,
-                  ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: context.surfaceBg,
+                  shape: BoxShape.circle,
                 ),
-              ],
+                child: Icon(
+                  Icons.access_time,
+                  color: context.accent,
+                  size: 20,
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    _TeamLogo(logoUrl: match.awayTeam.logo, size: 56),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppText(
+                      match.awayTeam.shortName ?? match.awayTeam.name,
+                      variant: AppTextVariant.h3,
+                      fontWeight: FontWeight.w700,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.sm,
             ),
-
-            const SizedBox(height: 16),
-
-            // Teams with logos
-            Row(
+            decoration: BoxDecoration(
+              color: context.surfaceBg,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: context.borderSubtle),
+            ),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Home team
-                Expanded(
-                  child: Column(
-                    children: [
-                      _TeamLogo(logoUrl: match.homeTeam.logo, size: 56),
-                      const SizedBox(height: 8),
-                      Text(
-                        match.homeTeam.shortName ?? match.homeTeam.name,
-                        style: AppTextStyles.h4.copyWith(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          height: 1.2,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.bolt,
+                      color: context.accent,
+                      size: 16,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    const AppText(
+                      'Status',
+                      variant: AppTextVariant.caption,
+                      tone: AppTextTone.secondary,
+                    ),
+                  ],
                 ),
-                // VS Icon
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: context.surfaceBg,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.access_time,
-                    color: context.accent,
-                    size: 20,
-                  ),
-                ),
-                // Away team
-                Expanded(
-                  child: Column(
-                    children: [
-                      _TeamLogo(logoUrl: match.awayTeam.logo, size: 56),
-                      const SizedBox(height: 8),
-                      Text(
-                        match.awayTeam.shortName ?? match.awayTeam.name,
-                        style: AppTextStyles.h4.copyWith(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          height: 1.2,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    AppBadge(
+                      label: match.status.toUpperCase(),
+                      variant: AppBadgeVariant.info,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      Icons.chevron_right,
+                      color: context.accent,
+                      size: 20,
+                    ),
+                  ],
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 16),
+class _HomeHero extends StatelessWidget {
+  final String selectedLeagueLabel;
+  final VoidCallback onNotificationsTap;
 
-            // Match status from backend
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: context.surfaceBg,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.bolt,
-                        color: context.accent,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Status',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: context.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        match.status.toUpperCase(),
-                        style: AppTextStyles.h4.copyWith(
-                          color: context.accent,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.chevron_right,
-                        color: context.accent,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+  const _HomeHero({
+    required this.selectedLeagueLabel,
+    required this.onNotificationsTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            context.accent.withValues(alpha: 0.2),
+            context.surfaceBg,
           ],
         ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: context.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppText(
+                  'Welcome Back',
+                  variant: AppTextVariant.h2,
+                  fontWeight: FontWeight.w700,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                AppText(
+                  'Now tracking: $selectedLeagueLabel',
+                  variant: AppTextVariant.body,
+                  tone: AppTextTone.secondary,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onNotificationsTap,
+            icon: Stack(
+              children: [
+                Icon(
+                  Icons.notifications_outlined,
+                  color: context.textPrimary,
+                  size: 24,
+                ),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: context.accentOrange,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

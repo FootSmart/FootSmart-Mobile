@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
-import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/extensions/theme_context.dart';
 import '../../../core/models/user.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/services/theme_service.dart';
+import '../../../core/theme/theme_notifier.dart';
 
-class SignInScreen extends StatefulWidget {
+class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
 
   @override
-  State<SignInScreen> createState() => _SignInScreenState();
+  ConsumerState<SignInScreen> createState() => _SignInScreenState();
 }
 
-class _SignInScreenState extends State<SignInScreen> {
+class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -81,7 +81,7 @@ class _SignInScreenState extends State<SignInScreen> {
             backgroundColor: context.accentOrange,
           ),
         );
-        Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+        AppRoutes.replace(context, AppRoutes.coachHome);
       }
       return;
     }
@@ -106,9 +106,9 @@ class _SignInScreenState extends State<SignInScreen> {
 
         // Navigate based on role
         if (authResponse.user.role == 'coach') {
-          Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+          AppRoutes.replace(context, AppRoutes.coachHome);
         } else {
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
+          AppRoutes.replace(context, AppRoutes.home);
         }
       }
     } catch (e) {
@@ -135,7 +135,8 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeService = Provider.of<ThemeService>(context);
+    final themeMode = ref.watch(themeModeProvider);
+    final isDarkMode = themeMode == ThemeMode.dark;
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -151,13 +152,14 @@ class _SignInScreenState extends State<SignInScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: IconButton(
-                    onPressed: () => themeService.toggleTheme(),
+                    onPressed: () =>
+                        ref.read(themeModeProvider.notifier).toggleTheme(),
                     icon: Icon(
-                      context.isDark ? Icons.light_mode : Icons.dark_mode,
+                      isDarkMode ? Icons.light_mode : Icons.dark_mode,
                       color: context.accent,
                       size: 28,
                     ),
-                    tooltip: context.isDark
+                    tooltip: isDarkMode
                         ? 'Switch to Light Mode'
                         : 'Switch to Dark Mode',
                   ),
@@ -365,7 +367,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                      AppRoutes.push(context, AppRoutes.forgotPassword);
                     },
                     child: Text(
                       'Forgot Password?',
@@ -387,7 +389,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.accent,
                       foregroundColor: context.scaffoldBg,
-                      disabledBackgroundColor: context.accent.withOpacity(0.5),
+                      disabledBackgroundColor:
+                          context.accent.withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -428,7 +431,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.signUp);
+                        AppRoutes.push(context, AppRoutes.signUp);
                       },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,

@@ -17,7 +17,10 @@ dependencies:
   shimmer: ^3.0.0
   
   # State Management
-  provider: ^6.1.1
+  flutter_riverpod: ^2.6.1
+
+  # Routing
+  go_router: ^14.6.2
   
   # Network
   http: ^1.1.2
@@ -43,6 +46,10 @@ dependencies:
   # Animation
   lottie: ^3.0.0
   animations: ^2.0.11
+  flutter_animate: ^4.5.0
+
+  # Bottom Sheets
+  modal_bottom_sheet: ^3.0.0
   
   # Icons
   flutter_iconpicker: ^3.2.4

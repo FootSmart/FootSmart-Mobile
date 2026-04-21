@@ -462,18 +462,18 @@ class _CoachLiveConsoleScreenState extends State<CoachLiveConsoleScreen> {
   void _onNavTap(BuildContext context, int index) {
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+        AppRoutes.replace(context, AppRoutes.coachHome);
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, AppRoutes.coachTactics);
+        AppRoutes.replace(context, AppRoutes.coachTactics);
         break;
       case 2:
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, AppRoutes.coachPerfectPlayer);
+        AppRoutes.replace(context, AppRoutes.coachPerfectPlayer);
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.profile);
+        AppRoutes.push(context, AppRoutes.profile);
         break;
     }
   }

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:provider/provider.dart';
-import 'core/constants/app_colors.dart';
-import 'core/constants/app_theme.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_notifier.dart';
 import 'core/routes/app_routes.dart';
-import 'core/services/theme_service.dart';
 import 'core/services/api_service.dart';
 import 'core/services/auth_service.dart';
 
@@ -35,42 +34,49 @@ void main() async {
   await initializeDateFormatting('fr_FR', null);
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeService(),
-      child: const FootSmartProApp(),
+    const ProviderScope(
+      child: FootSmartProApp(),
     ),
   );
 }
 
-class FootSmartProApp extends StatelessWidget {
+class FootSmartProApp extends ConsumerWidget {
   const FootSmartProApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        // Update system UI overlay based on theme
-        SystemChrome.setSystemUIOverlayStyle(
-          SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness:
-                themeService.isDarkMode ? Brightness.light : Brightness.dark,
-            systemNavigationBarColor: themeService.isDarkMode
-                ? AppColors.primaryDark
-                : AppColors.backgroundLight,
-            systemNavigationBarIconBrightness:
-                themeService.isDarkMode ? Brightness.light : Brightness.dark,
-          ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor:
+            isDark ? const Color(0xFF0D1117) : const Color(0xFFFFFFFF),
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
+      ),
+    );
+
+    return MaterialApp.router(
+      title: 'FootSmart Pro',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
+      routerConfig: AppRoutes.router,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        final textScaler = media.textScaler.clamp(
+          minScaleFactor: 0.9,
+          maxScaleFactor: 1.2,
         );
 
-        return MaterialApp(
-          title: 'FootSmart Pro',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeService.themeMode,
-          initialRoute: AppRoutes.splash,
-          routes: AppRoutes.routes,
+        return MediaQuery(
+          data: media.copyWith(textScaler: textScaler),
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );

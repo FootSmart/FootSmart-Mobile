@@ -195,9 +195,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
         // Navigate based on role
         if (_selectedRole == 'coach') {
-          Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+          AppRoutes.replace(context, AppRoutes.coachHome);
         } else {
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
+          AppRoutes.replace(context, AppRoutes.home);
         }
       }
     } catch (e) {
@@ -1049,8 +1049,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushReplacementNamed(
-                            context, AppRoutes.signIn);
+                        AppRoutes.replace(context, AppRoutes.signIn);
                       },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,

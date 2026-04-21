@@ -1,160 +1,124 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:footsmart_pro/core/extensions/theme_context.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:footsmart_pro/core/theme/app_colors.dart';
+import 'package:footsmart_pro/core/theme/app_radius.dart';
+import 'package:footsmart_pro/core/theme/app_spacing.dart';
+import 'package:footsmart_pro/core/utils/responsive.dart';
+import 'package:footsmart_pro/shared/widgets/app_badge.dart';
+import 'package:footsmart_pro/shared/widgets/app_card.dart';
+import 'package:footsmart_pro/shared/widgets/app_text.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
 
+  static const List<_ExploreFeature> _features = [
+    _ExploreFeature(
+      title: 'Competition Hub',
+      subtitle: 'Live standings, fixtures, and league analytics.',
+      icon: Icons.emoji_events_outlined,
+      route: AppRoutes.competitionHub,
+      tone: _FeatureTone.accent,
+    ),
+    _ExploreFeature(
+      title: 'Players Hub',
+      subtitle: 'Rankings, assist charts, and player impact form.',
+      icon: Icons.people_alt_rounded,
+      route: AppRoutes.playersHub,
+      tone: _FeatureTone.violet,
+    ),
+    _ExploreFeature(
+      title: 'Match Insights',
+      subtitle: 'Pattern recognition, momentum shifts, and matchup edges.',
+      icon: Icons.timeline,
+      route: AppRoutes.advancedMatchInsights,
+      tone: _FeatureTone.info,
+    ),
+    _ExploreFeature(
+      title: 'AI Prediction Center',
+      subtitle: 'Model confidence, scenario cards, and key risk factors.',
+      icon: Icons.psychology_outlined,
+      route: AppRoutes.aiPredictionCenter,
+      tone: _FeatureTone.accent,
+      badge: 'AI',
+    ),
+    _ExploreFeature(
+      title: 'Market Movements',
+      subtitle: 'Odds volatility tracking and sharp-money pressure map.',
+      icon: Icons.trending_up,
+      route: AppRoutes.marketMovements,
+      tone: _FeatureTone.warning,
+    ),
+    _ExploreFeature(
+      title: 'Analytics Dashboard',
+      subtitle: 'Performance scorecards, ROI trendline, and daily form.',
+      icon: Icons.bar_chart,
+      route: AppRoutes.analyticsDashboard,
+      tone: _FeatureTone.success,
+    ),
+    _ExploreFeature(
+      title: 'Bet History Analytics',
+      subtitle: 'Mistake heatmap and recurring outcome clusters.',
+      icon: Icons.history,
+      route: AppRoutes.betHistoryAnalytics,
+      tone: _FeatureTone.danger,
+    ),
+    _ExploreFeature(
+      title: 'Strategy Builder',
+      subtitle: 'Design systems, run simulations, and compare outcomes.',
+      icon: Icons.lightbulb_outline,
+      route: AppRoutes.strategyBuilder,
+      tone: _FeatureTone.warning,
+      badge: 'Lab',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final columns = ResponsiveHelper.exploreGridColumns(context);
+
     return Scaffold(
       backgroundColor: context.scaffoldBg,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.accent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.explore_outlined,
-                      color: context.textPrimary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Explore',
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Advanced tools & insights',
-                        style: TextStyle(
-                          color: context.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+        child: CustomScrollView(
+          slivers: [
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
+                child: _ExploreHero(),
               ),
             ),
-
-            // Menu Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.emoji_events_outlined,
-                    iconColor: context.accent,
-                    title: 'Competition Hub',
-                    subtitle: 'Live standings, fixtures &\nleague analytics',
-                    onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.competitionHub);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.people_alt_rounded,
-                    iconColor: const Color(0xFF6C63FF),
-                    title: 'Players Hub',
-                    subtitle: 'Player stats, rankings &\ngoal / assist charts',
-                    onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.playersHub);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.timeline,
-                    iconColor: context.accent,
-                    title: 'Advanced Match Insights',
-                    subtitle: 'Deep dive into match statistics\n& patterns',
-                    onTap: () {
-                      Navigator.pushNamed(
-                          context, AppRoutes.advancedMatchInsights);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.psychology_outlined,
-                    iconColor: context.accent,
-                    title: 'AI Prediction Center',
-                    subtitle: 'Machine learning powered\nmatch predictions',
-                    onTap: () {
-                      Navigator.pushNamed(
-                          context, AppRoutes.aiPredictionCenter);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.trending_up,
-                    iconColor: const Color(0xFFFF8A65),
-                    title: 'Market Movements',
-                    subtitle: 'Real-time odds tracking &\nmarket analysis',
-                    onTap: () {
-                      Navigator.pushNamed(
-                          context, AppRoutes.marketMovements);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.bar_chart,
-                    iconColor: context.accent,
-                    title: 'Analytics Dashboard',
-                    subtitle: 'Your betting performance &\nstatistics',
-                    onTap: () {
-                      Navigator.pushNamed(
-                          context, AppRoutes.analyticsDashboard);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.history,
-                    iconColor: context.accent,
-                    title: 'Bet History Analytics',
-                    subtitle: 'Detailed breakdown of your\nbetting patterns',
-                    onTap: () {
-                      Navigator.pushNamed(
-                          context, AppRoutes.betHistoryAnalytics);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.lightbulb_outline,
-                    iconColor: const Color(0xFFFFB74D),
-                    title: 'Strategy Builder',
-                    subtitle: 'Create & test betting strategies\nwith AI',
-                    onTap: () {
-                      Navigator.pushNamed(
-                          context, AppRoutes.strategyBuilder);
-                    },
-                  ),
-                  const SizedBox(height: 100),
-                ],
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                AppSpacing.xxl,
+              ),
+              sliver: SliverGrid.builder(
+                itemCount: _features.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: AppSpacing.sm,
+                  mainAxisSpacing: AppSpacing.sm,
+                  childAspectRatio: columns == 2 ? 1.02 : 1.2,
+                ),
+                itemBuilder: (context, index) {
+                  final feature = _features[index];
+                  return _ExploreFeatureCard(
+                    feature: feature,
+                    toneColor: _toneColor(context, feature.tone),
+                    index: index,
+                    onTap: () => AppRoutes.push(context, feature.route),
+                  );
+                },
               ),
             ),
           ],
@@ -162,89 +126,214 @@ class ExploreScreen extends StatelessWidget {
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: 1,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushNamed(context, AppRoutes.home);
-          } else if (index == 2) {
-            Navigator.pushNamed(context, AppRoutes.betting);
-          } else if (index == 3) {
-            Navigator.pushNamed(context, AppRoutes.wallet);
-          } else if (index == 4) {
-            Navigator.pushNamed(context, AppRoutes.profile);
-          }
-        },
+        onTap: (index) => _onNavTap(context, index),
       ),
     );
   }
 
-  Widget _buildMenuItem(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: context.borderSubtle,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: context.iconInactive,
-              size: 24,
-            ),
+  static void _onNavTap(BuildContext context, int index) {
+    if (index == 0) {
+      AppRoutes.push(context, AppRoutes.home);
+    } else if (index == 2) {
+      AppRoutes.push(context, AppRoutes.betting);
+    } else if (index == 3) {
+      AppRoutes.push(context, AppRoutes.wallet);
+    } else if (index == 4) {
+      AppRoutes.push(context, AppRoutes.profile);
+    }
+  }
+
+  static Color _toneColor(BuildContext context, _FeatureTone tone) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return switch (tone) {
+      _FeatureTone.accent => scheme.accentPrimary,
+      _FeatureTone.violet => scheme.accentSecondary,
+      _FeatureTone.warning => scheme.warning,
+      _FeatureTone.info => scheme.info,
+      _FeatureTone.success => scheme.success,
+      _FeatureTone.danger => scheme.danger,
+    };
+  }
+}
+
+class _ExploreHero extends StatelessWidget {
+  const _ExploreHero();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scheme.accentPrimary.withValues(alpha: 0.22),
+            scheme.accentSecondary.withValues(alpha: 0.12),
+            scheme.backgroundCard,
           ],
         ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: scheme.borderDefault),
       ),
-    );
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: scheme.accentPrimary.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(
+              Icons.travel_explore_rounded,
+              color: scheme.accentPrimary,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText(
+                  'Explore Center',
+                  variant: AppTextVariant.h1,
+                  fontWeight: FontWeight.w700,
+                ),
+                SizedBox(height: AppSpacing.xs),
+                AppText(
+                  'Sharper tools for smarter bets, live edges, and AI-assisted decisions.',
+                  variant: AppTextVariant.body,
+                  tone: AppTextTone.secondary,
+                ),
+                SizedBox(height: AppSpacing.sm),
+                AppBadge(
+                  label: 'LIVE INSIGHTS',
+                  variant: AppBadgeVariant.info,
+                  showLiveDot: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 350.ms).slideY(begin: -0.12, end: 0);
   }
+}
+
+class _ExploreFeatureCard extends StatelessWidget {
+  final _ExploreFeature feature;
+  final Color toneColor;
+  final int index;
+  final VoidCallback onTap;
+
+  const _ExploreFeatureCard({
+    required this.feature,
+    required this.toneColor,
+    required this.index,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: onTap,
+      elevated: true,
+      semanticsLabel: feature.title,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: toneColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(feature.icon, color: toneColor, size: 20),
+              ),
+              const Spacer(),
+              if (feature.badge != null)
+                AppBadge(
+                  label: feature.badge!,
+                  variant: feature.badge == 'AI'
+                      ? AppBadgeVariant.success
+                      : AppBadgeVariant.warning,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppText(
+            feature.title,
+            variant: AppTextVariant.h3,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            fontWeight: FontWeight.w700,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          AppText(
+            feature.subtitle,
+            variant: AppTextVariant.caption,
+            tone: AppTextTone.secondary,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              const AppText(
+                'Open',
+                variant: AppTextVariant.label,
+                tone: AppTextTone.info,
+                fontWeight: FontWeight.w700,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Icon(
+                Icons.arrow_outward_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.info,
+              ),
+            ],
+          ),
+        ],
+      ),
+    )
+        .animate(delay: (index * 70).ms)
+        .fadeIn(duration: 300.ms)
+        .slideY(begin: 0.12, end: 0, curve: Curves.easeOutCubic);
+  }
+}
+
+enum _FeatureTone {
+  accent,
+  violet,
+  warning,
+  info,
+  success,
+  danger,
+}
+
+class _ExploreFeature {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String route;
+  final _FeatureTone tone;
+  final String? badge;
+
+  const _ExploreFeature({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.route,
+    required this.tone,
+    this.badge,
+  });
 }

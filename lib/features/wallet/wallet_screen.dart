@@ -4,11 +4,15 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/extensions/theme_context.dart';
 import '../../core/routes/app_routes.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/models/wallet.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
-import '../../core/services/stripe_service.dart';
 import '../../core/services/wallet_service.dart';
+import '../../shared/widgets/app_button.dart';
+import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/app_skeleton.dart';
+import '../../shared/widgets/app_text.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/stripe_hosted_setup_page.dart';
 
@@ -31,7 +35,6 @@ class _WalletScreenState extends State<WalletScreen> {
 
   bool _isLoadingBalance = true;
   bool _isLoadingTransactions = true;
-  bool _isProcessingDeposit = false;
   bool _isProcessingWithdraw = false;
 
   String? _balanceError;
@@ -114,74 +117,6 @@ class _WalletScreenState extends State<WalletScreen> {
           _transactionsError = e.toString();
           _isLoadingTransactions = false;
         });
-      }
-    }
-  }
-
-  /// Dépôt via **Stripe Checkout** (Customer) : montant saisi ici, puis cartes enregistrées sur la page Stripe.
-  /// Crédit wallet par webhook (`checkout.session.completed` / `payment_intent.succeeded`).
-  Future<void> _handleDeposit(double amount) async {
-    if (amount < 0.5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Montant minimum 0,50 \$ (exigence Stripe).',
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isProcessingDeposit = true);
-
-    try {
-      await AuthService(ApiService()).syncTokenToApi();
-      final stripe = StripeService(ApiService());
-      final checkoutUrl = await stripe.createHostedDepositCheckoutUrl(
-        amount: amount,
-      );
-      if (!mounted) return;
-
-      final sessionId = await Navigator.of(context).push<String?>(
-        MaterialPageRoute<String?>(
-          builder: (ctx) => StripeHostedSetupPage(
-            initialUrl: checkoutUrl,
-            returnUrlContains: 'hosted-deposit-return',
-            appBarTitle: 'Paiement sécurisé (Stripe)',
-          ),
-        ),
-      );
-
-      if (!mounted) return;
-      if (sessionId == null || sessionId.isEmpty) {
-        setState(() => _isProcessingDeposit = false);
-        return;
-      }
-
-      await stripe.completeCheckoutDeposit(sessionId: sessionId);
-      await _loadWalletData();
-
-      if (mounted) {
-        setState(() => _isProcessingDeposit = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'La transaction s’est effectuée avec succès, c’est tout.',
-            ),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessingDeposit = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Dépôt Stripe : ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
       }
     }
   }
@@ -281,13 +216,13 @@ class _WalletScreenState extends State<WalletScreen> {
         currentIndex: 3,
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushNamed(context, AppRoutes.home);
+            AppRoutes.push(context, AppRoutes.home);
           } else if (index == 1) {
-            Navigator.pushNamed(context, AppRoutes.explore);
+            AppRoutes.push(context, AppRoutes.explore);
           } else if (index == 2) {
-            Navigator.pushNamed(context, AppRoutes.betting);
+            AppRoutes.push(context, AppRoutes.betting);
           } else if (index == 4) {
-            Navigator.pushNamed(context, AppRoutes.profile);
+            AppRoutes.push(context, AppRoutes.profile);
           }
         },
       ),
@@ -316,12 +251,10 @@ class _WalletScreenState extends State<WalletScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const AppText(
             'Wallet',
-            style: AppTextStyles.h2.copyWith(
-              fontWeight: FontWeight.bold,
-              color: context.textPrimary,
-            ),
+            variant: AppTextVariant.h2,
+            fontWeight: FontWeight.w700,
           ),
           const SizedBox(height: 20),
           Container(
@@ -443,42 +376,23 @@ class _WalletScreenState extends State<WalletScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: AppButton(
+                        label: 'Buy Points',
+                        icon: const Icon(Icons.add_rounded, size: 20),
                         onPressed:
                             _isLoadingBalance ? null : _showDepositDialog,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryDark,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_rounded, size: 20),
-                        label: const Text('Deposit'),
+                        fullWidth: true,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: OutlinedButton.icon(
+                      child: AppButton(
+                        label: 'Withdraw',
+                        icon: const Icon(Icons.north_east_rounded, size: 20),
+                        variant: AppButtonVariant.secondary,
                         onPressed:
                             _isLoadingBalance ? null : _showWithdrawDialog,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primaryDark,
-                          side: const BorderSide(
-                            color: AppColors.primaryDark,
-                            width: 2,
-                          ),
-                          backgroundColor:
-                              AppColors.primaryDark.withValues(alpha: 0.2),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.north_east_rounded, size: 20),
-                        label: const Text('Withdraw'),
+                        fullWidth: true,
                       ),
                     ),
                   ],
@@ -497,9 +411,10 @@ class _WalletScreenState extends State<WalletScreen> {
       children: [
         Row(
           children: [
-            Text(
+            const AppText(
               'Transaction History',
-              style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
+              variant: AppTextVariant.h3,
+              fontWeight: FontWeight.w700,
             ),
             const SizedBox(width: 8),
             IconButton(
@@ -514,11 +429,12 @@ class _WalletScreenState extends State<WalletScreen> {
         ),
         const SizedBox(height: 12),
         if (_isLoadingTransactions)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: CircularProgressIndicator(),
-            ),
+          const Column(
+            children: [
+              AppSkeleton.card(),
+              SizedBox(height: AppSpacing.sm),
+              AppSkeleton.card(),
+            ],
           )
         else if (_transactionsError != null)
           Container(
@@ -555,14 +471,7 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           )
         else if (_transactions.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: context.cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF252B3D)),
-            ),
+          AppCard(
             child: Column(
               children: [
                 Icon(
@@ -571,11 +480,10 @@ class _WalletScreenState extends State<WalletScreen> {
                   color: context.textSecondary.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 12),
-                Text(
+                AppText(
                   'No transactions yet',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: context.textSecondary,
-                  ),
+                  variant: AppTextVariant.body,
+                  tone: AppTextTone.secondary,
                 ),
               ],
             ),
@@ -701,11 +609,6 @@ class _WalletScreenState extends State<WalletScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final availablePoints = _balance?.points ?? 0;
-            final requestedPoints =
-                int.tryParse(_withdrawController.text.trim()) ?? 0;
-            final usdAmount = _usdFromPoints(requestedPoints);
-
             return AlertDialog(
               backgroundColor: const Color(0xFF1A1F2E),
               shape: RoundedRectangleBorder(
@@ -763,8 +666,6 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> _handleBuyPointsPack(String packId) async {
-    setState(() => _isProcessingDeposit = true);
-
     try {
       await AuthService(ApiService()).syncTokenToApi();
       final checkoutUrl = await _walletService.buyPointsPack(packId: packId);
@@ -783,7 +684,6 @@ class _WalletScreenState extends State<WalletScreen> {
       if (!mounted) return;
 
       if (sessionId == null || sessionId.isEmpty) {
-        setState(() => _isProcessingDeposit = false);
         return;
       }
 
@@ -792,7 +692,6 @@ class _WalletScreenState extends State<WalletScreen> {
 
       await _loadWalletData();
 
-      setState(() => _isProcessingDeposit = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Points ajoutés avec succès !'),
@@ -801,7 +700,6 @@ class _WalletScreenState extends State<WalletScreen> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() => _isProcessingDeposit = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur: ${e.toString()}'),
@@ -967,11 +865,6 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  static const BoxDecoration _cardDecoration = BoxDecoration(
-    color: Color(0xFF1A1F2E),
-    borderRadius: BorderRadius.all(Radius.circular(12)),
-    border: Border.fromBorderSide(BorderSide(color: Color(0xFF252B3D))),
-  );
 }
 
 class _TransactionCard extends StatelessWidget {
@@ -1017,14 +910,8 @@ class _TransactionCard extends StatelessWidget {
     final formattedDate = dateFormat.format(transaction.createdAt);
     final formattedTime = timeFormat.format(transaction.createdAt);
 
-    return Container(
-      width: double.infinity,
+    return AppCard(
       padding: const EdgeInsets.all(14),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1F2E),
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-        border: Border.fromBorderSide(BorderSide(color: Color(0xFF252B3D))),
-      ),
       child: Row(
         children: [
           Container(

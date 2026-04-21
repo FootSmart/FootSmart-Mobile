@@ -3,13 +3,18 @@ import 'package:intl/intl.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/models/bet.dart';
 import 'package:footsmart_pro/core/models/match.dart';
-import 'package:footsmart_pro/core/models/wallet.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/services/bet_service.dart';
 import 'package:footsmart_pro/core/services/match_service.dart';
 import 'package:footsmart_pro/core/services/wallet_service.dart';
 import 'package:footsmart_pro/core/extensions/theme_context.dart';
+import 'package:footsmart_pro/core/theme/app_spacing.dart';
+import 'package:footsmart_pro/shared/widgets/app_badge.dart';
+import 'package:footsmart_pro/shared/widgets/app_button.dart';
+import 'package:footsmart_pro/shared/widgets/app_card.dart';
+import 'package:footsmart_pro/shared/widgets/app_skeleton.dart';
+import 'package:footsmart_pro/shared/widgets/app_text.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
 class BettingScreen extends StatefulWidget {
@@ -201,17 +206,6 @@ class _BettingScreenState extends State<BettingScreen> {
     if (odds <= 1.8) return 'Low Risk';
     if (odds <= 2.7) return 'Medium Risk';
     return 'High Risk';
-  }
-
-  Color _riskColor(String label) {
-    switch (label) {
-      case 'Low Risk':
-        return AppColors.success;
-      case 'Medium Risk':
-        return AppColors.warning;
-      default:
-        return AppColors.error;
-    }
   }
 
   String _shortError(String? raw) {
@@ -419,10 +413,10 @@ class _BettingScreenState extends State<BettingScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
           onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
+            if (AppRoutes.canPop(context)) {
+              AppRoutes.pop(context);
             } else {
-              Navigator.pushReplacementNamed(context, AppRoutes.home);
+              AppRoutes.replace(context, AppRoutes.home);
             }
           },
         ),
@@ -455,8 +449,6 @@ class _BettingScreenState extends State<BettingScreen> {
                     matchesCount: _matches.length,
                     isLoading: _isMatchesLoading,
                     accent: context.accent,
-                    textPrimary: context.textPrimary,
-                    textSecondary: context.textSecondary,
                     cardBg: context.cardBg,
                     border: context.borderSubtle,
                   ),
@@ -465,11 +457,20 @@ class _BettingScreenState extends State<BettingScreen> {
                     title: '1. Pick Match',
                     subtitle: 'Next gameweek fixtures only',
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.sm),
                   if (_isMatchesLoading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 18),
-                      child: Center(child: CircularProgressIndicator()),
+                    SizedBox(
+                      height: 170,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: 3,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(width: AppSpacing.sm),
+                        itemBuilder: (_, __) => const AppSkeleton(
+                          width: 240,
+                          height: 170,
+                        ),
+                      ),
                     )
                   else if (_matchesError != null)
                     _ErrorCard(
@@ -504,13 +505,21 @@ class _BettingScreenState extends State<BettingScreen> {
                     title: '2. Pick Outcome',
                     subtitle: 'Live market odds and model probability',
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.sm),
                   if (_selectedMatch == null)
                     const _EmptyCard(message: 'Select a match to continue.')
                   else if (_isOddsLoading)
                     const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: CircularProgressIndicator()),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      child: Row(
+                        children: [
+                          Expanded(child: AppSkeleton(height: 116)),
+                          SizedBox(width: AppSpacing.xs),
+                          Expanded(child: AppSkeleton(height: 116)),
+                          SizedBox(width: AppSpacing.xs),
+                          Expanded(child: AppSkeleton(height: 116)),
+                        ],
+                      ),
                     )
                   else if (_selectedOdds == null)
                     _ErrorCard(
@@ -585,13 +594,11 @@ class _BettingScreenState extends State<BettingScreen> {
                         Icon(Icons.stars_rounded,
                             color: context.accent, size: 18),
                         const SizedBox(width: 6),
-                        Text(
+                        AppText(
                           'Available: $_points pts',
-                          style: TextStyle(
-                            color: context.accent,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                          variant: AppTextVariant.body,
+                          tone: AppTextTone.info,
+                          fontWeight: FontWeight.w600,
                         ),
                       ],
                     ),
@@ -617,7 +624,6 @@ class _BettingScreenState extends State<BettingScreen> {
                         : _selectedOddsValue.toStringAsFixed(2),
                     payoutLabel: _money.format(_potentialPayout),
                     riskLabel: _riskLabel(_selectedOddsValue),
-                    riskColor: _riskColor(_riskLabel(_selectedOddsValue)),
                   ),
                   const SizedBox(height: 14),
                   Container(
@@ -668,13 +674,13 @@ class _BettingScreenState extends State<BettingScreen> {
         currentIndex: 2,
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushNamed(context, AppRoutes.home);
+            AppRoutes.push(context, AppRoutes.home);
           } else if (index == 1) {
-            Navigator.pushNamed(context, AppRoutes.explore);
+            AppRoutes.push(context, AppRoutes.explore);
           } else if (index == 3) {
-            Navigator.pushNamed(context, AppRoutes.wallet);
+            AppRoutes.push(context, AppRoutes.wallet);
           } else if (index == 4) {
-            Navigator.pushNamed(context, AppRoutes.profile);
+            AppRoutes.push(context, AppRoutes.profile);
           }
         },
       ),
@@ -686,8 +692,6 @@ class _HeroPanel extends StatelessWidget {
   final int matchesCount;
   final bool isLoading;
   final Color accent;
-  final Color textPrimary;
-  final Color textSecondary;
   final Color cardBg;
   final Color border;
 
@@ -695,82 +699,69 @@ class _HeroPanel extends StatelessWidget {
     required this.matchesCount,
     required this.isLoading,
     required this.accent,
-    required this.textPrimary,
-    required this.textSecondary,
     required this.cardBg,
     required this.border,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.22),
-            cardBg,
-          ],
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accent.withValues(alpha: 0.22),
+              cardBg,
+            ],
+          ),
+          border: Border.all(color: border),
         ),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.auto_graph_rounded, color: accent, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Today\'s Trading Floor',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  isLoading
-                      ? 'Syncing next gameweek...'
-                      : '$matchesCount fixtures open for pricing',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'Next GW',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                child: Icon(Icons.auto_graph_rounded, color: accent, size: 24),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText(
+                      'Today\'s Trading Floor',
+                      variant: AppTextVariant.h3,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    const SizedBox(height: 4),
+                    AppText(
+                      isLoading
+                          ? 'Syncing next gameweek...'
+                          : '$matchesCount fixtures open for pricing',
+                      variant: AppTextVariant.caption,
+                      tone: AppTextTone.secondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ],
+                ),
+              ),
+              const AppBadge(
+                label: 'Next GW',
+                variant: AppBadgeVariant.info,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -787,21 +778,16 @@ class _SectionTitle extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           title,
-          style: TextStyle(
-            color: context.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
+          variant: AppTextVariant.h3,
+          fontWeight: FontWeight.w800,
         ),
         const SizedBox(height: 2),
-        Text(
+        AppText(
           subtitle,
-          style: TextStyle(
-            color: context.textSecondary,
-            fontSize: 12,
-          ),
+          variant: AppTextVariant.caption,
+          tone: AppTextTone.secondary,
         ),
       ],
     );
@@ -901,25 +887,16 @@ class _SmartTipCard extends StatelessWidget {
     final label = odds.labelFor(recommended);
     final probability = odds.probabilityFor(recommended).toStringAsFixed(1);
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.borderSubtle),
-      ),
+    return AppCard(
       child: Row(
         children: [
           Icon(Icons.bolt_rounded, color: context.accent, size: 18),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: AppText(
               'Smart tip: $label looks most probable at $probability%.',
-              style: TextStyle(
-                color: context.textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              variant: AppTextVariant.body,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -1123,7 +1100,6 @@ class _BetSlipPanel extends StatelessWidget {
   final String oddsLabel;
   final String payoutLabel;
   final String riskLabel;
-  final Color riskColor;
 
   const _BetSlipPanel({
     required this.hasOdds,
@@ -1132,18 +1108,17 @@ class _BetSlipPanel extends StatelessWidget {
     required this.oddsLabel,
     required this.payoutLabel,
     required this.riskLabel,
-    required this.riskColor,
   });
+
+  AppBadgeVariant _badgeVariant() {
+    if (riskLabel.contains('Low')) return AppBadgeVariant.success;
+    if (riskLabel.contains('Medium')) return AppBadgeVariant.warning;
+    return AppBadgeVariant.danger;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.borderSubtle),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1151,31 +1126,16 @@ class _BetSlipPanel extends StatelessWidget {
             children: [
               Icon(Icons.receipt_long_rounded, color: context.accent, size: 18),
               const SizedBox(width: 8),
-              Text(
+              const AppText(
                 'Live Bet Slip',
-                style: TextStyle(
-                  color: context.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
+                variant: AppTextVariant.h3,
+                fontWeight: FontWeight.w800,
               ),
               const Spacer(),
               if (hasOdds)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: riskColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    riskLabel,
-                    style: TextStyle(
-                      color: riskColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                AppBadge(
+                  label: riskLabel,
+                  variant: _badgeVariant(),
                 ),
             ],
           ),
@@ -1199,20 +1159,16 @@ class _BetSlipPanel extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
+          AppText(
             title,
-            style: TextStyle(
-              color: context.textSecondary,
-              fontSize: 13,
-            ),
+            variant: AppTextVariant.caption,
+            tone: AppTextTone.secondary,
           ),
-          Text(
+          AppText(
             value,
-            style: TextStyle(
-              color: emphasize ? context.accent : context.textPrimary,
-              fontSize: emphasize ? 16 : 14,
-              fontWeight: FontWeight.w700,
-            ),
+            variant: emphasize ? AppTextVariant.bodyLarge : AppTextVariant.body,
+            tone: emphasize ? AppTextTone.info : AppTextTone.primary,
+            fontWeight: FontWeight.w700,
           ),
         ],
       ),
@@ -1243,37 +1199,11 @@ class _ActionBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: disabled ? null : onPlace,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.accent,
-              foregroundColor: context.surfaceBg,
-              disabledBackgroundColor: context.surfaceBg,
-              disabledForegroundColor: context.textSecondary,
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: placing
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: context.surfaceBg,
-                    ),
-                  )
-                : Text(
-                    buttonLabel,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-          ),
+        child: AppButton(
+          label: buttonLabel,
+          onPressed: disabled ? null : onPlace,
+          isLoading: placing,
+          fullWidth: true,
         ),
       ),
     );
@@ -1293,36 +1223,28 @@ class _ErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.borderSubtle),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AppText(
             message,
-            style: TextStyle(
-              color: context.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
+            variant: AppTextVariant.body,
+            fontWeight: FontWeight.w700,
           ),
           const SizedBox(height: 4),
-          Text(
+          AppText(
             detail,
-            style: TextStyle(
-              color: context.textSecondary,
-              fontSize: 12,
-            ),
+            variant: AppTextVariant.caption,
+            tone: AppTextTone.secondary,
           ),
           const SizedBox(height: 8),
-          TextButton(
+          AppButton(
+            label: 'Retry',
+            variant: AppButtonVariant.ghost,
             onPressed: onRetry,
-            child: const Text('Retry'),
+            fullWidth: false,
+            size: AppButtonSize.sm,
           ),
         ],
       ),
@@ -1337,19 +1259,11 @@ class _EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.borderSubtle),
-      ),
-      child: Text(
+    return AppCard(
+      child: AppText(
         message,
-        style: TextStyle(
-          color: context.textSecondary,
-          fontSize: 13,
-        ),
+        variant: AppTextVariant.body,
+        tone: AppTextTone.secondary,
       ),
     );
   }
