@@ -28,6 +28,7 @@ import 'package:footsmart_pro/features/splash/splash_screen.dart';
 import 'package:footsmart_pro/features/wallet/wallet_screen.dart';
 import 'package:footsmart_pro/features/admin/admin_web_dashboard_screen.dart';
 import 'package:footsmart_pro/core/models/match.dart';
+import 'package:footsmart_pro/core/widgets/admin_route_guard.dart';
 
 // Coach screens
 import 'package:footsmart_pro/features/coach/screens/coach_home_screen.dart';
@@ -87,21 +88,26 @@ class AppRoutes {
         signIn: (context) => const SignInScreen(),
         forgotPassword: (context) => const ForgotPasswordScreen(),
         signUp: (context) => const SignUpScreen(),
-        home: (context) => const HomeScreen(),
-        explore: (context) => const ExploreScreen(),
+        home: (context) => const AdminRouteGuard(child: HomeScreen()),
+        explore: (context) => const AdminRouteGuard(child: ExploreScreen()),
         competitionHub: (context) => const CompetitionHubScreen(),
         playersHub: (context) => const PlayersHubScreen(),
-        betting: (context) => const BettingScreen(),
-        wallet: (context) => const WalletScreen(),
-        profile: (context) => const ProfileScreen(),
-        profileInfo: (context) => const PersonalInformationScreen(),
-        kyc: (context) => const VerificationStatusScreen(),
-        notifications: (context) => const NotificationsScreen(),
-        paymentMethods: (context) => const PaymentMethodsScreen(),
-        bettingHistory: (context) => const BettingHistoryScreen(),
-        responsibleGambling: (context) => const ResponsibleGamblingScreen(),
-        support: (context) => const HelpSupportScreen(),
-        settings: (context) => const SettingsScreen(),
+        betting: (context) => const AdminRouteGuard(child: BettingScreen()),
+        wallet: (context) => const AdminRouteGuard(child: WalletScreen()),
+        profile: (context) => const AdminRouteGuard(child: ProfileScreen()),
+        profileInfo: (context) =>
+          const AdminRouteGuard(child: PersonalInformationScreen()),
+        kyc: (context) => const AdminRouteGuard(child: VerificationStatusScreen()),
+        notifications: (context) =>
+          const AdminRouteGuard(child: NotificationsScreen()),
+        paymentMethods: (context) =>
+          const AdminRouteGuard(child: PaymentMethodsScreen()),
+        bettingHistory: (context) =>
+          const AdminRouteGuard(child: BettingHistoryScreen()),
+        responsibleGambling: (context) =>
+          const AdminRouteGuard(child: ResponsibleGamblingScreen()),
+        support: (context) => const AdminRouteGuard(child: HelpSupportScreen()),
+        settings: (context) => const AdminRouteGuard(child: SettingsScreen()),
         matchDetail: (context) {
           final match =
               ModalRoute.of(context)!.settings.arguments as FootballMatch;

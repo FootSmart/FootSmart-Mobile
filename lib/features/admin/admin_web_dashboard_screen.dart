@@ -10,6 +10,8 @@ import 'package:footsmart_pro/core/services/admin_dashboard_service.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/services/auth_service.dart';
 
+enum _AdminSection { dashboard, users, statistics, wallet }
+
 class AdminWebDashboardScreen extends StatefulWidget {
   const AdminWebDashboardScreen({super.key});
 
@@ -30,6 +32,7 @@ class _AdminWebDashboardScreenState extends State<AdminWebDashboardScreen> {
   bool _usedFallback = false;
   Map<String, dynamic> _stats = const {};
   List<AdminBettor> _bettors = const [];
+  _AdminSection _selectedSection = _AdminSection.dashboard;
 
   @override
   void initState() {
@@ -203,10 +206,26 @@ class _AdminWebDashboardScreenState extends State<AdminWebDashboardScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          _sideItem(Icons.dashboard_rounded, 'Dashboard', true),
-          _sideItem(Icons.people_alt_rounded, 'Users', false),
-          _sideItem(Icons.analytics_rounded, 'Statistics', false),
-          _sideItem(Icons.account_balance_wallet_rounded, 'Wallet', false),
+          _sideItem(
+            icon: Icons.dashboard_rounded,
+            label: 'Dashboard',
+            section: _AdminSection.dashboard,
+          ),
+          _sideItem(
+            icon: Icons.people_alt_rounded,
+            label: 'Users',
+            section: _AdminSection.users,
+          ),
+          _sideItem(
+            icon: Icons.analytics_rounded,
+            label: 'Statistics',
+            section: _AdminSection.statistics,
+          ),
+          _sideItem(
+            icon: Icons.account_balance_wallet_rounded,
+            label: 'Wallet',
+            section: _AdminSection.wallet,
+          ),
           const Spacer(),
           SizedBox(
             width: double.infinity,
@@ -234,8 +253,19 @@ class _AdminWebDashboardScreenState extends State<AdminWebDashboardScreen> {
     );
   }
 
-  Widget _sideItem(IconData icon, String label, bool active) {
-    return Container(
+  Widget _sideItem({
+    required IconData icon,
+    required String label,
+    required _AdminSection section,
+  }) {
+    final active = _selectedSection == section;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        if (_selectedSection == section) return;
+        setState(() => _selectedSection = section);
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: BoxDecoration(
@@ -262,6 +292,7 @@ class _AdminWebDashboardScreenState extends State<AdminWebDashboardScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -304,21 +335,7 @@ class _AdminWebDashboardScreenState extends State<AdminWebDashboardScreen> {
       );
     }
 
-    final content = Column(
-      children: [
-        _buildHeader(isDesktop),
-        if (_usedFallback)
-          _banner(
-            'Mode fallback actif: branchement endpoint admin incomplet. Les donnees proviennent du fallback.',
-          ),
-        const SizedBox(height: 14),
-        _buildStatsStrip(),
-        const SizedBox(height: 16),
-        _buildAnalyticsPanels(isDesktop),
-        const SizedBox(height: 16),
-        _buildBettorsPanel(isDesktop),
-      ],
-    );
+    final content = _buildSectionContent(isDesktop);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(isDesktop ? 8 : 14, 16, 16, 16),
@@ -330,7 +347,68 @@ class _AdminWebDashboardScreenState extends State<AdminWebDashboardScreen> {
     );
   }
 
+  Widget _buildSectionContent(bool isDesktop) {
+    final children = <Widget>[
+      _buildHeader(isDesktop),
+    ];
+
+    if (_usedFallback) {
+      children.add(
+        _banner(
+          'Mode fallback actif: branchement endpoint admin incomplet. Les donnees proviennent du fallback.',
+        ),
+      );
+      children.add(const SizedBox(height: 14));
+    } else {
+      children.add(const SizedBox(height: 14));
+    }
+
+    switch (_selectedSection) {
+      case _AdminSection.dashboard:
+        children.addAll([
+          _buildStatsStrip(),
+          const SizedBox(height: 16),
+          _buildAnalyticsPanels(isDesktop),
+          const SizedBox(height: 16),
+          _buildBettorsPanel(isDesktop),
+        ]);
+        break;
+      case _AdminSection.users:
+        children.add(_buildBettorsPanel(isDesktop));
+        break;
+      case _AdminSection.statistics:
+        children.addAll([
+          _buildStatsStrip(),
+          const SizedBox(height: 16),
+          _buildAnalyticsPanels(isDesktop),
+        ]);
+        break;
+      case _AdminSection.wallet:
+        children.add(_buildWalletPanel(isDesktop));
+        break;
+    }
+
+    return Column(children: children);
+  }
+
   Widget _buildHeader(bool isDesktop) {
+    final title = switch (_selectedSection) {
+      _AdminSection.dashboard => 'Admin Dashboard',
+      _AdminSection.users => 'Users',
+      _AdminSection.statistics => 'Statistics',
+      _AdminSection.wallet => 'Wallet',
+    };
+
+    final subtitle = switch (_selectedSection) {
+      _AdminSection.dashboard => 'Web control center for users and performance',
+      _AdminSection.users => 'All bettors and account statuses',
+      _AdminSection.statistics => 'Global KPIs and outcomes',
+      _AdminSection.wallet => 'Wallet volume and user balances',
+    };
+
+    final canSearch =
+        _selectedSection == _AdminSection.dashboard || _selectedSection == _AdminSection.users;
+
     return Row(
       children: [
         IconButton(
@@ -343,23 +421,23 @@ class _AdminWebDashboardScreenState extends State<AdminWebDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Admin Dashboard',
+                title,
                 style: AppTextStyles.h2.copyWith(color: Colors.white),
               ),
               Text(
-                'Web control center for users and performance',
+                subtitle,
                 style: AppTextStyles.bodySmall.copyWith(color: Colors.white60),
               ),
             ],
           ),
         ),
-        if (isDesktop)
+        if (isDesktop && canSearch)
           SizedBox(
             width: 290,
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search bettor',
+                hintText: 'Search user',
                 hintStyle: AppTextStyles.bodySmall.copyWith(color: Colors.white54),
                 prefixIcon: const Icon(Icons.search_rounded, color: Colors.white70),
                 filled: true,
@@ -686,6 +764,86 @@ class _AdminWebDashboardScreenState extends State<AdminWebDashboardScreen> {
                             ],
                           ),
                         ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalletPanel(bool isDesktop) {
+    final bettors = _filteredBettors;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111F3D),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF1F3661)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Wallet Balances', style: AppTextStyles.h3.copyWith(color: Colors.white)),
+          const SizedBox(height: 8),
+          Text(
+            'Total wallet volume: ${_currencyFmt.format(_toDouble(_stats['totalBalance']))}',
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.accentGreen),
+          ),
+          const SizedBox(height: 12),
+          if (bettors.isEmpty)
+            Text(
+              'No wallet data available.',
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+            )
+          else if (isDesktop)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columnSpacing: 22,
+                headingTextStyle:
+                    AppTextStyles.label.copyWith(color: AppColors.accentGreen),
+                dataTextStyle:
+                    AppTextStyles.bodySmall.copyWith(color: Colors.white),
+                columns: const [
+                  DataColumn(label: Text('Name')),
+                  DataColumn(label: Text('Email')),
+                  DataColumn(label: Text('Balance')),
+                ],
+                rows: bettors
+                    .map(
+                      (b) => DataRow(
+                        cells: [
+                          DataCell(Text(b.displayName)),
+                          DataCell(Text(b.email)),
+                          DataCell(Text(_currencyFmt.format(b.balance))),
+                        ],
+                      ),
+                    )
+                    .toList(),
+              ),
+            )
+          else
+            Column(
+              children: bettors
+                  .map(
+                    (b) => ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+                      title: Text(
+                        b.displayName,
+                        style: AppTextStyles.label.copyWith(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        b.email,
+                        style: AppTextStyles.caption.copyWith(color: Colors.white70),
+                      ),
+                      trailing: Text(
+                        _currencyFmt.format(b.balance),
+                        style:
+                            AppTextStyles.label.copyWith(color: AppColors.accentGreen),
                       ),
                     ),
                   )

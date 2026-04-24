@@ -6,6 +6,7 @@ import '../constants/api_constants.dart';
 class ApiService {
   late final Dio _dio;
   String? _authToken;
+  late final List<String> _fallbackBaseUrls;
 
   // Singleton pattern
   static final ApiService _instance = ApiService._internal();
@@ -26,7 +27,53 @@ class ApiService {
     return ApiConstants.baseUrl;
   }
 
+  List<String> _resolveFallbackBaseUrls() {
+    if (!kIsWeb) return const [];
+
+    final host = Uri.base.host.isNotEmpty ? Uri.base.host : 'localhost';
+    final urls = <String>[
+      'http://$host:3009/api',
+      'http://$host:3008/api',
+      'http://$host:3001/api',
+    ];
+
+    const envBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (envBaseUrl.isNotEmpty) {
+      urls.remove(envBaseUrl);
+      urls.insert(0, envBaseUrl);
+    }
+
+    return urls;
+  }
+
+  bool _isRetriableNetworkError(DioException e) {
+    return e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.unknown;
+  }
+
+  Future<Response> _requestWithFallback(
+    Future<Response> Function() request,
+  ) async {
+    DioException? lastError;
+
+    for (final baseUrl in _fallbackBaseUrls) {
+      _dio.options.baseUrl = baseUrl;
+      try {
+        return await request();
+      } on DioException catch (e) {
+        lastError = e;
+        if (!_isRetriableNetworkError(e)) rethrow;
+      }
+    }
+
+    if (lastError != null) throw lastError;
+    throw ApiException('No internet connection');
+  }
+
   ApiService._internal() {
+    _fallbackBaseUrls = _resolveFallbackBaseUrls();
     _dio = Dio(BaseOptions(
       baseUrl: _resolveBaseUrl(),
       connectTimeout: ApiConstants.connectTimeout,
@@ -84,10 +131,12 @@ class ApiService {
     Options? options,
   }) async {
     try {
-      final response = await _dio.get(
-        path,
-        queryParameters: queryParameters,
-        options: options,
+      final response = await _requestWithFallback(
+        () => _dio.get(
+          path,
+          queryParameters: queryParameters,
+          options: options,
+        ),
       );
       return response;
     } catch (e) {
@@ -103,11 +152,13 @@ class ApiService {
     Options? options,
   }) async {
     try {
-      final response = await _dio.post(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
+      final response = await _requestWithFallback(
+        () => _dio.post(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          options: options,
+        ),
       );
       return response;
     } catch (e) {
@@ -123,11 +174,13 @@ class ApiService {
     Options? options,
   }) async {
     try {
-      final response = await _dio.put(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
+      final response = await _requestWithFallback(
+        () => _dio.put(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          options: options,
+        ),
       );
       return response;
     } catch (e) {
@@ -143,11 +196,13 @@ class ApiService {
     Options? options,
   }) async {
     try {
-      final response = await _dio.delete(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
+      final response = await _requestWithFallback(
+        () => _dio.delete(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          options: options,
+        ),
       );
       return response;
     } catch (e) {
