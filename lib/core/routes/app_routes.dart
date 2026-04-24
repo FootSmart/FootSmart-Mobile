@@ -26,6 +26,7 @@ import 'package:footsmart_pro/features/profile/screens/help_support_screen.dart'
 import 'package:footsmart_pro/features/profile/screens/settings_screen.dart';
 import 'package:footsmart_pro/features/splash/splash_screen.dart';
 import 'package:footsmart_pro/features/wallet/wallet_screen.dart';
+import 'package:footsmart_pro/features/admin/admin_web_dashboard_screen.dart';
 import 'package:footsmart_pro/core/models/match.dart';
 
 // Coach screens
@@ -69,6 +70,7 @@ class AppRoutes {
   static const String analyticsDashboard = '/explore/analytics-dashboard';
   static const String betHistoryAnalytics = '/explore/bet-history-analytics';
   static const String strategyBuilder = '/explore/strategy-builder';
+  static const String adminDashboard = '/admin/dashboard';
 
   // Coach routes
   static const String coachHome = '/coach-home';
@@ -114,6 +116,7 @@ class AppRoutes {
         analyticsDashboard: (context) => const AnalyticsDashboardScreen(),
         betHistoryAnalytics: (context) => const BetHistoryAnalyticsScreen(),
         strategyBuilder: (context) => const StrategyBuilderScreen(),
+        adminDashboard: (context) => const AdminWebDashboardScreen(),
 
         // Coach routes
         coachHome: (context) => const CoachHomeScreen(),

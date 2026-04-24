@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:footsmart_pro/core/extensions/theme_context.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
@@ -129,6 +130,19 @@ class ExploreScreen extends StatelessWidget {
                           context, AppRoutes.analyticsDashboard);
                     },
                   ),
+                  if (kIsWeb) ...[
+                    const SizedBox(height: 16),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.admin_panel_settings_rounded,
+                      iconColor: const Color(0xFF4A90E2),
+                      title: 'Admin Dashboard',
+                      subtitle: 'Bettors list, activity and global\nplatform statistics',
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.adminDashboard);
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   _buildMenuItem(
                     context,

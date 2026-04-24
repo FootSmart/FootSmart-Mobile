@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -45,6 +46,17 @@ void main() async {
 class FootSmartProApp extends StatelessWidget {
   const FootSmartProApp({super.key});
 
+  String _initialRoute() {
+    if (!kIsWeb) return AppRoutes.splash;
+
+    final path = Uri.base.path.trim();
+    if (path.isNotEmpty && path != '/' && AppRoutes.routes.containsKey(path)) {
+      return path;
+    }
+
+    return AppRoutes.splash;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
@@ -69,7 +81,7 @@ class FootSmartProApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeService.themeMode,
-          initialRoute: AppRoutes.splash,
+          initialRoute: _initialRoute(),
           routes: AppRoutes.routes,
         );
       },

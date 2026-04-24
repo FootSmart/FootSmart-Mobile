@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../constants/api_constants.dart';
 
 /// Base API service for handling HTTP requests
@@ -13,9 +14,21 @@ class ApiService {
     return _instance;
   }
 
+  String _resolveBaseUrl() {
+    const envBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (envBaseUrl.isNotEmpty) return envBaseUrl;
+
+    if (kIsWeb) {
+      final host = Uri.base.host.isNotEmpty ? Uri.base.host : 'localhost';
+      return 'http://$host:3009/api';
+    }
+
+    return ApiConstants.baseUrl;
+  }
+
   ApiService._internal() {
     _dio = Dio(BaseOptions(
-      baseUrl: ApiConstants.baseUrl,
+      baseUrl: _resolveBaseUrl(),
       connectTimeout: ApiConstants.connectTimeout,
       receiveTimeout: ApiConstants.receiveTimeout,
       headers: ApiConstants.defaultHeaders,

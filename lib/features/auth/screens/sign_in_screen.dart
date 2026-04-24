@@ -107,6 +107,8 @@ class _SignInScreenState extends State<SignInScreen> {
         // Navigate based on role
         if (authResponse.user.role == 'coach') {
           Navigator.pushReplacementNamed(context, AppRoutes.coachHome);
+        } else if (authResponse.user.role == 'admin') {
+          Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
         } else {
           Navigator.pushReplacementNamed(context, AppRoutes.home);
         }

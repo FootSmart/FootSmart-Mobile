@@ -112,6 +112,13 @@ class ApiConstants {
   static const String analyticsMarketMovements = '/analytics/market/movements';
   static const String analyticsPredictions = '/analytics/predictions';
 
+    // ─── Admin (future-proof endpoints) ─────────────────────────────────────
+    static const String adminDashboard = '/admin/dashboard';
+    static const String adminBettors = '/admin/bettors';
+    static const String analyticsAdminDashboard = '/analytics/admin/dashboard';
+    static const String analyticsAdminBettors = '/analytics/admin/bettors';
+    static const String usersByRole = '/users';
+
   // ─── Headers ─────────────────────────────────────────────────────────────
   static Map<String, String> get defaultHeaders => {
         'Content-Type': 'application/json',
