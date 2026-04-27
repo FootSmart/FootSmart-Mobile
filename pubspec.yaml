@@ -62,6 +62,11 @@ dependencies:
   flutter_stripe: ^12.5.0
   webview_flutter: ^4.13.1
 
+  # Revennue Cat Subscriptions
+  purchases_flutter: ^10.0.1
+  purchases_ui_flutter: ^10.0.1
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

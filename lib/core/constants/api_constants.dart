@@ -2,14 +2,14 @@
 class ApiConstants {
   ApiConstants._();
 
-  /// Base URL — currently pointing to local dev server for testing.
+  /// Base URL
   ///
-  /// Local IP  : `http://192.168.1.143:3001/api`  ← active now
-  /// Production: `https://footsmart-backend-production.up.railway.app/api`
+  /// - Android emulator: `http://10.0.2.2:3001/api`
+  /// - iOS simulator: `http://localhost:3001/api`
+  /// - Real device: `http://<LAN_IP_OF_PC>:3001/api`
   ///
-  /// To switch back to production, restore the defaultValue above,
-  /// or override at run time:
-  /// `flutter run --dart-define=API_BASE_URL=https://footsmart-backend-production.up.railway.app/api`
+  /// Override with:
+  /// `flutter run --dart-define=API_BASE_URL=http://<IP>:3001/api`
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'https://footsmart-backend-production.up.railway.app/api',

@@ -11,6 +11,8 @@ import '../../../core/extensions/theme_context.dart';
 import '../../../core/models/user.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/theme/theme_notifier.dart';
+import '../../../core/services/premium_service.dart';
 
 enum _AuthEntryMode {
   loading,
@@ -34,6 +36,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   bool _isLoading = false;
   bool _rememberMe = true;
+  late final PremiumService _premiumService;
   _AuthEntryMode _mode = _AuthEntryMode.loading;
   User? _rememberedUser;
 
@@ -41,6 +44,11 @@ class _SignInScreenState extends State<SignInScreen> {
   void initState() {
     super.initState();
     _authService = AuthService(ApiService());
+    _authService.getRememberMe().then((value) {
+      if (!mounted) return;
+      setState(() => _rememberMe = value);
+    });
+    _premiumService = PremiumService();
     _loadEntryState();
   }
 
@@ -105,6 +113,19 @@ class _SignInScreenState extends State<SignInScreen> {
 
       if (!mounted) return;
 
+      await _premiumService.hasPremiumAccess(
+        userId: authResponse.user.id,
+      );
+      debugPrint('RevenueCat configured for user: ${authResponse.user.id}');
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back, ${authResponse.user.displayName}!'),
+            backgroundColor: context.accent,
+          ),
+        );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Welcome back, ${authResponse.user.displayName}!'),
