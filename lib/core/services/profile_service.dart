@@ -102,6 +102,67 @@ class ProfileService {
     return null;
   }
 
+  // read cached user only
+  Future<User?> getCachedUser() async {
+    return _getUserLocally();
+  }
+
+  // helper for locked/unlocked UI
+  Future<bool> hasPremiumAccess() async {
+    final user = await getCurrentUser();
+    return user?.hasPremiumAccess ?? false;
+  }
+
+  // NEW: update local cache immediately after RevenueCat success
+  Future<User?> updateCachedSubscription({
+    required bool subscriptionActive,
+    String? subscriptionPlan,
+    DateTime? subscriptionEndsAt,
+    bool clearPlan = false,
+    bool clearEndDate = false,
+}) async {
+    final currentUser = await _getUserLocally();
+    if (currentUser == null) return null;
+
+    final updatedUser = currentUser.copyWith(
+      subscriptionActive: subscriptionActive,
+      subscriptionPlan: subscriptionPlan,
+      subscriptionEndsAt: subscriptionEndsAt,
+      clearSubscriptionPlan: clearPlan,
+      clearSubscriptionEndsAt: clearEndDate,
+    );
+
+    await _saveUserLocally(updatedUser);
+    return updatedUser;
+  }
+
+  // NEW: sync subscription fields to backend
+  Future<User?> syncSubscriptionToBackend({
+    required bool subscriptionActive,
+    String? subscriptionPlan,
+    DateTime? subscriptionEndsAt,
+}) async {
+    try {
+      final response = await _apiService.put(
+        ApiConstants.updateProfile,
+        data: {
+          'subscriptionActive': subscriptionActive,
+          'subscriptionPlan': subscriptionPlan,
+          'subscriptionEndsAt': subscriptionEndsAt?.toIso8601String(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final user = User.fromJson(response.data as Map<String,dynamic>);
+        await _saveUserLocally(user);
+        return user;
+      }
+    } catch (e) {
+      rethrow;
+    }
+    return null;
+  }
+
   /// Save user locally
   Future<void> _saveUserLocally(User user) async {
     final prefs = await SharedPreferences.getInstance();

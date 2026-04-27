@@ -8,6 +8,7 @@ import '../../../core/models/user.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/theme/theme_notifier.dart';
+import '../../../core/services/premium_service.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -24,6 +25,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = true;
   late final AuthService _authService;
+  late final PremiumService _premiumService;
 
   @override
   void initState() {
@@ -33,6 +35,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       if (!mounted) return;
       setState(() => _rememberMe = value);
     });
+    _premiumService = PremiumService();
   }
 
   @override
@@ -94,6 +97,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
       final authResponse =
           await _authService.login(loginRequest, rememberMe: _rememberMe);
+
+      await _premiumService.hasPremiumAccess(
+        userId: authResponse.user.id,
+      );
+      debugPrint('RevenueCat configured for user: ${authResponse.user.id}');
 
       if (mounted) {
         // Show success message
