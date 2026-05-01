@@ -493,8 +493,8 @@ class _CoachTacticsScreenState extends State<CoachTacticsScreen> {
                     child: IconButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text(
+                          const SnackBar(
+                            content: Text(
                                 'Shared to squad! Players can view it now.'),
                             backgroundColor: AppColors.accentGreen,
                           ),

@@ -43,7 +43,10 @@ class _AppCardState extends State<AppCard> {
         decoration: BoxDecoration(
           color: colorScheme.backgroundCard,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: colorScheme.borderDefault),
+          border: Border.all(
+            color: colorScheme.borderDefault,
+            width: 1.1,
+          ),
           boxShadow: widget.elevated ? [AppShadows.cardShadow] : const [],
         ),
         child: widget.child,

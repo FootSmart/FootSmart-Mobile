@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/models/bet.dart';
 import 'package:footsmart_pro/core/models/match.dart';
+import 'package:footsmart_pro/core/models/wallet.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/services/bet_service.dart';
@@ -43,12 +46,14 @@ class _BettingScreenState extends State<BettingScreen> {
   bool _isMatchesLoading = true;
   bool _isOddsLoading = false;
   bool _isPlacingBet = false;
+  Timer? _countdownTimer;
 
   String? _matchesError;
   String? _oddsError;
 
   double _stake = 20;
   int _points = 0;
+  int _myBetsCount = 0;
 
   @override
   void initState() {
@@ -57,16 +62,33 @@ class _BettingScreenState extends State<BettingScreen> {
     _matchService = MatchService(api);
     _betService = BetService(api);
     _walletService = WalletService(api);
+    _startCountdownTicker();
     _loadMatches();
-    _loadPoints();
+    _refreshWalletAndBets();
   }
 
-  Future<void> _loadPoints() async {
+  void _startCountdownTicker() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
+
+  Future<void> _refreshWalletAndBets() async {
     try {
-      final balance = await _walletService.getBalance();
+      final results = await Future.wait([
+        _walletService.getBalance(),
+        _betService.getMyBets(limit: 20),
+      ]);
+
+      final balance = results[0] as WalletBalance;
+      final myBets = results[1] as MyBetsResponse;
+
       if (mounted) {
         setState(() {
           _points = balance.points;
+          _myBetsCount = myBets.total;
         });
       }
     } catch (_) {}
@@ -74,6 +96,7 @@ class _BettingScreenState extends State<BettingScreen> {
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _stakeController.dispose();
     super.dispose();
   }
@@ -214,10 +237,54 @@ class _BettingScreenState extends State<BettingScreen> {
     if (lower.contains('no odds found')) {
       return 'Odds are not available for this match yet.';
     }
+    if (lower.contains('odds missing')) {
+      return 'Odds are currently missing for this match.';
+    }
     if (lower.contains('insufficient points')) {
       return 'You do not have enough points.';
     }
+    if (lower.contains('betting closed')) {
+      return 'Betting is closed for this match.';
+    }
+    if (lower.contains('match not scheduled')) {
+      return 'This match is no longer scheduled for betting.';
+    }
+    if (lower.contains('already settled')) {
+      return 'This market has already been settled.';
+    }
     return raw.replaceFirst('Exception: ', '');
+  }
+
+  int _secondsUntilClose(FootballMatch match) {
+    if (match.betClosesAt != null) {
+      final seconds =
+          match.betClosesAt!.difference(DateTime.now().toUtc()).inSeconds;
+      return seconds < 0 ? 0 : seconds;
+    }
+
+    return (match.secondsUntilClose ?? 0).clamp(0, 864000);
+  }
+
+  bool _isBettingOpenForMatch(FootballMatch match) {
+    if (match.status != 'scheduled') return false;
+    if (match.betClosesAt != null) {
+      return DateTime.now().toUtc().isBefore(match.betClosesAt!);
+    }
+    if (match.isBettingOpen != null) {
+      return match.isBettingOpen!;
+    }
+    return (match.secondsUntilClose ?? 0) > 0;
+  }
+
+  String _formatCountdown(int totalSeconds) {
+    final h = totalSeconds ~/ 3600;
+    final m = (totalSeconds % 3600) ~/ 60;
+    final s = totalSeconds % 60;
+
+    final hh = h.toString().padLeft(2, '0');
+    final mm = m.toString().padLeft(2, '0');
+    final ss = s.toString().padLeft(2, '0');
+    return '$hh:$mm:$ss';
   }
 
   String _matchTime(FootballMatch match) {
@@ -254,10 +321,9 @@ class _BettingScreenState extends State<BettingScreen> {
     final odds = _selectedOdds;
     if (match == null || odds == null) return;
 
-    if (!match.isScheduled) {
+    if (!_isBettingOpenForMatch(match)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('This match is no longer open for betting.')),
+        const SnackBar(content: Text('Betting is closed for this match.')),
       );
       return;
     }
@@ -294,7 +360,11 @@ class _BettingScreenState extends State<BettingScreen> {
 
       setState(() {
         _points = result.pointsAfter;
+        _myBetsCount += 1;
       });
+
+      await _refreshWalletAndBets();
+      if (!mounted) return;
 
       showModalBottomSheet<void>(
         context: context,
@@ -491,10 +561,16 @@ class _BettingScreenState extends State<BettingScreen> {
                         separatorBuilder: (_, __) => const SizedBox(width: 10),
                         itemBuilder: (context, index) {
                           final match = _matches[index];
+                          final secondsUntilClose = _secondsUntilClose(match);
+                          final bettingOpen = _isBettingOpenForMatch(match);
                           return _MatchCard(
                             match: match,
                             selected: _selectedMatch?.id == match.id,
                             dateLabel: _matchTime(match),
+                            countdownLabel: bettingOpen
+                                ? 'Bet closes in ${_formatCountdown(secondsUntilClose)}'
+                                : 'Betting closed',
+                            bettingOpen: bettingOpen,
                             onTap: () => _selectMatch(match),
                           );
                         },
@@ -600,6 +676,13 @@ class _BettingScreenState extends State<BettingScreen> {
                           tone: AppTextTone.info,
                           fontWeight: FontWeight.w600,
                         ),
+                        const SizedBox(width: 8),
+                        AppText(
+                          'My bets: $_myBetsCount',
+                          variant: AppTextVariant.caption,
+                          tone: AppTextTone.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ],
                     ),
                   ),
@@ -661,10 +744,15 @@ class _BettingScreenState extends State<BettingScreen> {
             disabled: _selectedOdds == null ||
                 _selectedMatch == null ||
                 _isPlacingBet ||
-                _points < _stake,
+              _points < _stake ||
+              (_selectedMatch != null &&
+                !_isBettingOpenForMatch(_selectedMatch!)),
             placing: _isPlacingBet,
             buttonLabel: _selectedOdds == null
                 ? 'Odds Unavailable'
+              : (_selectedMatch != null &&
+                  !_isBettingOpenForMatch(_selectedMatch!))
+                ? 'Betting Closed'
                 : 'Bet ${_stake.toInt()} pts • Win ${_potentialPayout.toInt()} pts',
             onPlace: _placeBet,
           ),
@@ -738,7 +826,7 @@ class _HeroPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText(
+                    const AppText(
                       'Today\'s Trading Floor',
                       variant: AppTextVariant.h3,
                       fontWeight: FontWeight.w800,
@@ -798,12 +886,16 @@ class _MatchCard extends StatelessWidget {
   final FootballMatch match;
   final bool selected;
   final String dateLabel;
+  final String countdownLabel;
+  final bool bettingOpen;
   final VoidCallback onTap;
 
   const _MatchCard({
     required this.match,
     required this.selected,
     required this.dateLabel,
+    required this.countdownLabel,
+    required this.bettingOpen,
     required this.onTap,
   });
 
@@ -868,6 +960,17 @@ class _MatchCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              countdownLabel,
+              style: TextStyle(
+                color: bettingOpen ? context.accent : AppColors.error,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

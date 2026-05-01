@@ -143,7 +143,7 @@ class _CoachOpponentScreenState extends State<CoachOpponentScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
+                          borderSide: const BorderSide(
                             color: AppColors.chartBlue,
                             width: 2,
                           ),
@@ -161,7 +161,7 @@ class _CoachOpponentScreenState extends State<CoachOpponentScreen> {
                         color: AppColors.chartBlue,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.radar,
                         color: Colors.white,
                         size: 22,
@@ -181,7 +181,7 @@ class _CoachOpponentScreenState extends State<CoachOpponentScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(
+                          const CircularProgressIndicator(
                             color: AppColors.chartBlue,
                           ),
                           const SizedBox(height: 16),
@@ -308,7 +308,7 @@ class _DossierContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _StatChip('Form', 'WWDWL', AppColors.accentGreen),
@@ -394,7 +394,7 @@ class _DossierContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Row(
+          const Row(
             children: [
               Expanded(
                 child: _ZoneCard(
@@ -404,7 +404,7 @@ class _DossierContent extends StatelessWidget {
                   zones: ['Right flank attacks', 'Set pieces (corners)'],
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: _ZoneCard(
                   title: 'Weak Zones',
@@ -514,23 +514,23 @@ class _DossierContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: context.borderColor),
             ),
-            child: Column(
+            child: const Column(
               children: [
                 _StrategyItem(
                   icon: Icons.shield_outlined,
                   text: 'Use 3-5-2 to overload midfield',
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _StrategyItem(
                   icon: Icons.speed,
                   text: 'Exploit slow center backs with pace',
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _StrategyItem(
                   icon: Icons.person_off,
                   text: 'Man-mark Salah with dedicated defender',
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _StrategyItem(
                   icon: Icons.sports,
                   text: 'Target the left side — their RB pushes high',

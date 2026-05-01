@@ -25,9 +25,14 @@ class AppNavBar extends StatelessWidget {
       height: 64 + bottomInset,
       decoration: BoxDecoration(
         color: colorScheme.backgroundElevated.withValues(alpha: 0.92),
-        border: Border(
-          top: BorderSide(color: colorScheme.borderDefault),
-        ),
+        border: Border(top: BorderSide(color: colorScheme.borderDefault)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 22,
+            offset: Offset(0, -6),
+          ),
+        ],
       ),
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Row(
@@ -116,7 +121,8 @@ class _NavItem extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final selected = index == currentIndex;
 
-    final color = selected ? colorScheme.accentPrimary : colorScheme.textSecondary;
+    final color =
+        selected ? colorScheme.accentPrimary : colorScheme.textSecondary;
 
     return Expanded(
       child: Semantics(
@@ -141,8 +147,15 @@ class _NavItem extends StatelessWidget {
                     decoration: emphasized
                         ? BoxDecoration(
                             color: selected
-                                ? colorScheme.accentPrimary.withValues(alpha: 0.2)
+                                ? colorScheme.accentPrimary
+                                    .withValues(alpha: 0.18)
                                 : colorScheme.borderSubtle,
+                            border: Border.all(
+                              color: selected
+                                  ? colorScheme.accentPrimary
+                                      .withValues(alpha: 0.5)
+                                  : Colors.transparent,
+                            ),
                             borderRadius: BorderRadius.circular(AppRadius.full),
                           )
                         : null,
@@ -158,7 +171,8 @@ class _NavItem extends StatelessWidget {
                   duration: const Duration(milliseconds: 180),
                   style: Theme.of(context).textTheme.labelSmall!.copyWith(
                         color: color,
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
                       ),
                   child: Text(label),
                 ),

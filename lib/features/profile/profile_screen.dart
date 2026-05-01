@@ -107,8 +107,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
   ];
 
+  static const _ProfileSection _adminSection = _ProfileSection(
+    title: 'Admin',
+    items: [
+      _ProfileMenuItem(
+        icon: Icons.admin_panel_settings_outlined,
+        label: 'Admin Panel',
+        route: AppRoutes.adminDashboard,
+      ),
+      _ProfileMenuItem(
+        icon: Icons.science_outlined,
+        label: 'Admin Test Lab',
+        route: AppRoutes.adminTestLab,
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
+    final sections = <_ProfileSection>[
+      ..._menuSections,
+      if (_user?.role == 'admin') _adminSection,
+    ];
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       body: SafeArea(
@@ -153,7 +174,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (final section in _menuSections) ...[
+                          for (final section in sections) ...[
                             Text(
                               section.title.toUpperCase(),
                               style: AppTextStyles.overline.copyWith(
@@ -324,9 +345,9 @@ class _UserCard extends StatelessWidget {
                               : Icons.pending_outlined,
                         ),
                         if (user.role == 'coach')
-                          _StatusBadge(
+                          const _StatusBadge(
                             label: 'Coach',
-                            backgroundColor: const Color(0x33FF7A00),
+                            backgroundColor: Color(0x33FF7A00),
                             textColor: AppColors.accentOrange,
                           ),
                       ],

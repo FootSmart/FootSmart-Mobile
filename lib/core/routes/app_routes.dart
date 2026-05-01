@@ -28,6 +28,11 @@ import 'package:footsmart_pro/features/profile/screens/settings_screen.dart';
 import 'package:footsmart_pro/features/splash/splash_screen.dart';
 import 'package:footsmart_pro/features/wallet/wallet_screen.dart';
 import 'package:footsmart_pro/core/models/match.dart';
+import 'package:footsmart_pro/features/admin/admin_dashboard_screen.dart';
+import 'package:footsmart_pro/features/admin/admin_users_screen.dart';
+import 'package:footsmart_pro/features/admin/admin_matches_screen.dart';
+import 'package:footsmart_pro/features/admin/admin_bets_screen.dart';
+import 'package:footsmart_pro/features/admin/admin_test_lab_screen.dart';
 
 // Coach screens
 import 'package:footsmart_pro/features/coach/screens/coach_home_screen.dart';
@@ -79,6 +84,11 @@ class AppRoutes {
   static const String coachPerfectPlayer = '/coach-perfect-player';
   static const String coachLiveConsole = '/coach-live-console';
   static const String coachBroadcast = '/coach-broadcast';
+  static const String adminDashboard = '/admin/dashboard';
+  static const String adminUsers = '/admin/users';
+  static const String adminMatches = '/admin/matches';
+  static const String adminBets = '/admin/bets';
+  static const String adminTestLab = '/admin/test-lab';
 
   static final GoRouter router = GoRouter(
     initialLocation: splash,
@@ -184,6 +194,26 @@ class AppRoutes {
         path: coachBroadcast,
         builder: (context, state) => const CoachBroadcastScreen(),
       ),
+      GoRoute(
+        path: adminDashboard,
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: adminUsers,
+        builder: (context, state) => const AdminUsersScreen(),
+      ),
+      GoRoute(
+        path: adminMatches,
+        builder: (context, state) => const AdminMatchesScreen(),
+      ),
+      GoRoute(
+        path: adminBets,
+        builder: (context, state) => const AdminBetsScreen(),
+      ),
+      GoRoute(
+        path: adminTestLab,
+        builder: (context, state) => const AdminTestLabScreen(),
+      ),
     ],
   );
 
@@ -231,6 +261,11 @@ class AppRoutes {
         coachPerfectPlayer: (context) => const CoachPerfectPlayerScreen(),
         coachLiveConsole: (context) => const CoachLiveConsoleScreen(),
         coachBroadcast: (context) => const CoachBroadcastScreen(),
+        adminDashboard: (context) => const AdminDashboardScreen(),
+        adminUsers: (context) => const AdminUsersScreen(),
+        adminMatches: (context) => const AdminMatchesScreen(),
+        adminBets: (context) => const AdminBetsScreen(),
+        adminTestLab: (context) => const AdminTestLabScreen(),
       };
 
   static Future<T?> push<T extends Object?>(

@@ -1,38 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
+import 'package:footsmart_pro/core/theme/app_radius.dart';
+import 'package:footsmart_pro/shared/widgets/app_button.dart';
+import 'package:footsmart_pro/shared/widgets/app_card.dart';
+import 'package:footsmart_pro/widgets/custom_text_field.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/extensions/theme_context.dart';
 import '../../../core/models/user.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/theme/theme_notifier.dart';
 
-class SignInScreen extends ConsumerStatefulWidget {
+enum _AuthEntryMode {
+  loading,
+  form,
+  quickAccess,
+}
+
+class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
   @override
-  ConsumerState<SignInScreen> createState() => _SignInScreenState();
+  State<SignInScreen> createState() => _SignInScreenState();
 }
 
-class _SignInScreenState extends ConsumerState<SignInScreen> {
+class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _rememberMe = true;
+
   late final AuthService _authService;
+
+  bool _isLoading = false;
+  bool _rememberMe = true;
+  _AuthEntryMode _mode = _AuthEntryMode.loading;
+  User? _rememberedUser;
 
   @override
   void initState() {
     super.initState();
     _authService = AuthService(ApiService());
-    _authService.getRememberMe().then((value) {
-      if (!mounted) return;
-      setState(() => _rememberMe = value);
-    });
+    _loadEntryState();
   }
 
   @override
@@ -42,14 +51,32 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     super.dispose();
   }
 
+  Future<void> _loadEntryState() async {
+    final rememberMe = await _authService.getRememberMe();
+    final hasStoredSession =
+        rememberMe && await _authService.hasStoredSession();
+    final savedUser = hasStoredSession ? await _authService.getUser() : null;
+
+    if (!mounted) return;
+
+    setState(() {
+      _rememberMe = rememberMe;
+      _rememberedUser = savedUser;
+      _mode =
+          savedUser != null ? _AuthEntryMode.quickAccess : _AuthEntryMode.form;
+    });
+  }
+
   String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
+    if (value == null || value.trim().isEmpty) {
       return 'Email is required';
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
+
+    final emailRegex = RegExp(r'^[\w\-.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value.trim())) {
       return 'Enter a valid email';
     }
+
     return null;
   }
 
@@ -65,403 +92,344 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    // Static coach login for testing
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
+    try {
+      final authResponse = await _authService.login(
+        LoginRequest(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        ),
+        rememberMe: _rememberMe,
+      );
 
-    if (email == 'coach@coach.com' && password == 'coachcoach') {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Welcome back, Coach!'),
-            backgroundColor: context.accentOrange,
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Welcome back, ${authResponse.user.displayName}!'),
+          backgroundColor: context.accent,
+        ),
+      );
+
+      _goToAuthenticatedArea(authResponse.user);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().contains('401') ||
+                    e.toString().contains('Unauthorized')
+                ? 'Invalid email or password'
+                : 'Login failed. Please try again.',
           ),
-        );
-        AppRoutes.replace(context, AppRoutes.coachHome);
-      }
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleQuickAccess() async {
+    setState(() => _isLoading = true);
+
+    final isValid = await _authService.hasValidSession();
+    final user = await _authService.getUser();
+
+    if (!mounted) return;
+
+    if (!isValid || user == null) {
+      await _authService.clearSavedSession(clearRememberMe: true);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _rememberMe = false;
+        _rememberedUser = null;
+        _mode = _AuthEntryMode.form;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Saved session expired. Please sign in again.'),
+        ),
+      );
       return;
     }
 
-    try {
-      final loginRequest = LoginRequest(
-        email: email,
-        password: password,
-      );
+    _goToAuthenticatedArea(user);
+  }
 
-      final authResponse =
-          await _authService.login(loginRequest, rememberMe: _rememberMe);
+  Future<void> _useAnotherAccount() async {
+    await _authService.clearSavedSession(clearRememberMe: true);
+    if (!mounted) return;
 
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Welcome back, ${authResponse.user.displayName}!'),
-            backgroundColor: context.accent,
-          ),
-        );
+    _emailController.clear();
+    _passwordController.clear();
 
-        // Navigate based on role
-        if (authResponse.user.role == 'coach') {
-          AppRoutes.replace(context, AppRoutes.coachHome);
-        } else {
-          AppRoutes.replace(context, AppRoutes.home);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+    setState(() {
+      _isLoading = false;
+      _rememberMe = false;
+      _rememberedUser = null;
+      _mode = _AuthEntryMode.form;
+    });
+  }
 
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.toString().contains('401') ||
-                      e.toString().contains('Unauthorized')
-                  ? 'Invalid email or password'
-                  : 'Login failed. Please try again.',
-            ),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+  void _goToAuthenticatedArea(User user) {
+    if (user.role == 'admin') {
+      AppRoutes.replace(context, AppRoutes.adminDashboard);
+      return;
     }
+
+    if (user.role == 'coach') {
+      AppRoutes.replace(context, AppRoutes.coachHome);
+      return;
+    }
+
+    AppRoutes.replace(context, AppRoutes.home);
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeModeProvider);
-    final isDarkMode = themeMode == ThemeMode.dark;
-
     return Scaffold(
       backgroundColor: context.scaffoldBg,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
+      body: Container(
+        decoration: BoxDecoration(gradient: context.bgGradient),
+        child: Stack(
+          children: [
+            const _PremiumBackdrop(),
+            SafeArea(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                child: switch (_mode) {
+                  _AuthEntryMode.loading => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  _AuthEntryMode.quickAccess => _buildQuickAccess(context),
+                  _AuthEntryMode.form => _buildSignInForm(context),
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignInForm(BuildContext context) {
+    return SingleChildScrollView(
+      key: const ValueKey('sign-in-form'),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          const _AuthBrandHeader(
+            title: 'FootSmart Pro',
+            subtitle: 'Your edge before kickoff',
+          ),
+          const SizedBox(height: 32),
+          AppCard(
+            elevated: true,
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Sign in',
+                    style: AppTextStyles.h1.copyWith(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Access premium match intelligence and betting analytics.',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: context.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  CustomTextField(
+                    controller: _emailController,
+                    label: 'Email',
+                    hint: 'name@example.com',
+                    prefixIcon: Icons.alternate_email_rounded,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: _validateEmail,
+                    enabled: !_isLoading,
+                  ),
+                  const SizedBox(height: 18),
+                  CustomTextField(
+                    controller: _passwordController,
+                    label: 'Password',
+                    hint: 'Enter your password',
+                    prefixIcon: Icons.lock_outline_rounded,
+                    obscureText: true,
+                    showPasswordToggle: true,
+                    validator: _validatePassword,
+                    enabled: !_isLoading,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _rememberMe,
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                setState(() => _rememberMe = value ?? false);
+                              },
+                      ),
+                      Text(
+                        'Remember me',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: context.textSecondary,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => AppRoutes.push(
+                                  context,
+                                  AppRoutes.forgotPassword,
+                                ),
+                        child: Text(
+                          'Forgot password?',
+                          style: AppTextStyles.buttonMedium.copyWith(
+                            color: context.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  AppButton(
+                    label: 'Login',
+                    size: AppButtonSize.lg,
+                    isLoading: _isLoading,
+                    onPressed: _isLoading ? null : _handleSignIn,
+                  ),
+                  const SizedBox(height: 18),
+                  Center(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'New to FootSmart Pro? ',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: context.textSecondary,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () =>
+                                  AppRoutes.push(context, AppRoutes.signUp),
+                          child: Text(
+                            'Create account',
+                            style: AppTextStyles.buttonMedium.copyWith(
+                              color: context.accent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+          Center(
+            child: Text(
+              '18+ only. Please gamble responsibly.',
+              style: AppTextStyles.caption.copyWith(
+                color: context.textTertiary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAccess(BuildContext context) {
+    final user = _rememberedUser;
+
+    return Center(
+      key: const ValueKey('quick-access'),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: AppCard(
+            elevated: true,
+            padding: const EdgeInsets.all(28),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Theme toggle button
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    onPressed: () =>
-                        ref.read(themeModeProvider.notifier).toggleTheme(),
-                    icon: Icon(
-                      isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                      color: context.accent,
-                      size: 28,
-                    ),
-                    tooltip: isDarkMode
-                        ? 'Switch to Light Mode'
-                        : 'Switch to Dark Mode',
-                  ),
+                const _AuthBrandHeader(
+                  title: 'FootSmart Pro',
+                  subtitle: 'Welcome back',
+                  centered: true,
                 ),
-
-                const SizedBox(height: 20),
-
-                // Logo
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: context.accent,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child: CustomPaint(
-                      size: const Size(32, 32),
-                      painter: _ConcentricCirclesPainter(),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Title
+                const SizedBox(height: 28),
+                _UserAvatar(user: user),
+                const SizedBox(height: 18),
                 Text(
-                  'Welcome Back',
+                  user?.displayName ?? 'FootSmart User',
+                  textAlign: TextAlign.center,
                   style: AppTextStyles.h1.copyWith(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
                     color: context.textPrimary,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-
-                const SizedBox(height: 8),
-
-                // Subtitle
+                const SizedBox(height: 4),
                 Text(
-                  'Sign in to continue betting smarter',
+                  user?.email ?? '',
+                  textAlign: TextAlign.center,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: context.textSecondary,
                   ),
                 ),
-
-                const SizedBox(height: 40),
-
-                // Email field
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 8),
-                      child: Text(
-                        'Email Address',
-                        style: AppTextStyles.inputLabel.copyWith(
-                          color: context.textPrimary,
-                        ),
-                      ),
-                    ),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: _validateEmail,
-                      style: AppTextStyles.inputText.copyWith(
-                        color: context.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'your@email.com',
-                        hintStyle: AppTextStyles.inputHint.copyWith(
-                          color: context.textHint,
-                        ),
-                        filled: true,
-                        fillColor: context.inputBg,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: context.borderColor,
-                            width: 1.5,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: context.borderColor,
-                            width: 1.5,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: context.accent,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Password field
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 8),
-                      child: Text(
-                        'Password',
-                        style: AppTextStyles.inputLabel.copyWith(
-                          color: context.textPrimary,
-                        ),
-                      ),
-                    ),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      validator: _validatePassword,
-                      style: AppTextStyles.inputText.copyWith(
-                        color: context.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Enter your password',
-                        hintStyle: AppTextStyles.inputHint.copyWith(
-                          color: context.textHint,
-                        ),
-                        filled: true,
-                        fillColor: context.inputBg,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: context.iconInactive,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: context.borderColor,
-                            width: 1.5,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: context.borderColor,
-                            width: 1.5,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: context.accent,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // Remember me
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _rememberMe,
-                      activeColor: context.accent,
-                      onChanged: (v) async {
-                        final next = v ?? true;
-                        setState(() => _rememberMe = next);
-                        await _authService.setRememberMe(next);
-                      },
-                    ),
-                    Text(
-                      'Remember me',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: context.textSecondary,
-                      ),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-
                 const SizedBox(height: 8),
-
-                // Forgot password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      AppRoutes.push(context, AppRoutes.forgotPassword);
-                    },
-                    child: Text(
-                      'Forgot Password?',
-                      style: AppTextStyles.buttonMedium.copyWith(
-                        color: context.accent,
-                      ),
-                    ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Sign in button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleSignIn,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.accent,
-                      foregroundColor: context.scaffoldBg,
-                      disabledBackgroundColor:
-                          context.accent.withValues(alpha: 0.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isLoading
-                        ? SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                context.scaffoldBg,
-                              ),
-                            ),
-                          )
-                        : Text(
-                            'Sign In',
-                            style: AppTextStyles.buttonLarge.copyWith(
-                              color: context.scaffoldBg,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                  decoration: BoxDecoration(
+                    color: context.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    border: Border.all(color: context.borderSubtle),
                   ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Sign up link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account? ",
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: context.textSecondary,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        AppRoutes.push(context, AppRoutes.signUp);
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Sign Up',
-                        style: AppTextStyles.buttonMedium.copyWith(
-                          color: context.accent,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 40),
-
-                // Legal text
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'By signing in, you confirm you are 18+ and agree to our responsible gambling policies',
-                    style: AppTextStyles.caption.copyWith(
-                      color: context.textTertiary,
-                      height: 1.4,
+                    'Quick access secured',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: context.accent,
+                      fontWeight: FontWeight.w600,
                     ),
-                    textAlign: TextAlign.center,
                   ),
+                ),
+                const SizedBox(height: 24),
+                AppButton(
+                  label: 'Continue',
+                  size: AppButtonSize.lg,
+                  isLoading: _isLoading,
+                  onPressed: _isLoading ? null : _handleQuickAccess,
+                ),
+                const SizedBox(height: 8),
+                AppButton(
+                  label: 'Use another account',
+                  variant: AppButtonVariant.ghost,
+                  size: AppButtonSize.lg,
+                  onPressed: _isLoading ? null : _useAnotherAccount,
                 ),
               ],
             ),
@@ -472,24 +440,214 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   }
 }
 
-class _ConcentricCirclesPainter extends CustomPainter {
+class _AuthBrandHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool centered;
+
+  const _AuthBrandHeader({
+    required this.title,
+    required this.subtitle,
+    this.centered = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final alignment =
+        centered ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+
+    return Column(
+      crossAxisAlignment: alignment,
+      children: [
+        Row(
+          mainAxisSize: centered ? MainAxisSize.min : MainAxisSize.max,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: context.accent,
+                boxShadow: [
+                  BoxShadow(
+                    color: context.accent.withValues(alpha: 0.22),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: CustomPaint(
+                  size: const Size(28, 28),
+                  painter: _BrandMarkPainter(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Flexible(
+              child: Text(
+                title,
+                style: AppTextStyles.displayMedium.copyWith(
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          subtitle,
+          textAlign: centered ? TextAlign.center : TextAlign.start,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: context.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UserAvatar extends StatelessWidget {
+  final User? user;
+
+  const _UserAvatar({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarUrl = user?.avatarUrl;
+
+    return Container(
+      width: 92,
+      height: 92,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: context.accent, width: 1.6),
+        boxShadow: [
+          BoxShadow(
+            color: context.accent.withValues(alpha: 0.16),
+            blurRadius: 26,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: avatarUrl != null && avatarUrl.isNotEmpty
+            ? Image.network(
+                avatarUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _initials(context),
+              )
+            : _initials(context),
+      ),
+    );
+  }
+
+  Widget _initials(BuildContext context) {
+    return Container(
+      color: context.surfaceBg,
+      alignment: Alignment.center,
+      child: Text(
+        user?.initials ?? 'FS',
+        style: AppTextStyles.displayMedium.copyWith(
+          color: context.accent,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumBackdrop extends StatelessWidget {
+  const _PremiumBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -90,
+            right: -50,
+            child: _glowCircle(
+              size: 220,
+              color: context.accent.withValues(alpha: 0.12),
+            ),
+          ),
+          Positioned(
+            top: 110,
+            left: -80,
+            child: _glowCircle(
+              size: 170,
+              color: const Color(0xFF0F302B),
+            ),
+          ),
+          Positioned(
+            bottom: -120,
+            right: -30,
+            child: _glowCircle(
+              size: 260,
+              color: context.accent.withValues(alpha: 0.08),
+            ),
+          ),
+          Positioned(
+            top: 120,
+            right: 36,
+            child: _dotCluster(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _glowCircle({required double size, required Color color}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+      ),
+    );
+  }
+
+  Widget _dotCluster(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: List.generate(
+        12,
+        (index) => Container(
+          width: index.isEven ? 5 : 3,
+          height: index.isEven ? 5 : 3,
+          decoration: BoxDecoration(
+            color: context.accent.withValues(
+              alpha: index.isEven ? 0.45 : 0.22,
+            ),
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandMarkPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final stroke = Paint()
       ..color = AppColors.primaryDark
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
+      ..strokeWidth = 2.2;
 
-    final center = Offset(size.width / 2, size.height / 2);
-
-    canvas.drawCircle(center, size.width * 0.45, paint);
-    canvas.drawCircle(center, size.width * 0.30, paint);
-
-    final fillPaint = Paint()
+    final fill = Paint()
       ..color = AppColors.primaryDark
       ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(center, size.width * 0.15, fillPaint);
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawCircle(center, size.width * 0.44, stroke);
+    canvas.drawCircle(center, size.width * 0.28, stroke);
+    canvas.drawCircle(center, size.width * 0.12, fill);
   }
 
   @override

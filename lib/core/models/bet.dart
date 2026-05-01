@@ -23,6 +23,9 @@ class MatchOdds {
   final double homeOdds;
   final double drawOdds;
   final double awayOdds;
+  final DateTime? betClosesAt;
+  final bool? isBettingOpen;
+  final int? secondsUntilClose;
 
   const MatchOdds({
     required this.matchId,
@@ -34,6 +37,9 @@ class MatchOdds {
     required this.homeOdds,
     required this.drawOdds,
     required this.awayOdds,
+    this.betClosesAt,
+    this.isBettingOpen,
+    this.secondsUntilClose,
   });
 
   factory MatchOdds.fromJson(Map<String, dynamic> json) {
@@ -53,6 +59,11 @@ class MatchOdds {
       homeOdds: parseNum(json['homeOdds']),
       drawOdds: parseNum(json['drawOdds']),
       awayOdds: parseNum(json['awayOdds']),
+      betClosesAt: json['betClosesAt'] != null
+          ? DateTime.parse(json['betClosesAt'] as String)
+          : null,
+      isBettingOpen: json['isBettingOpen'] as bool?,
+      secondsUntilClose: (json['secondsUntilClose'] as num?)?.toInt(),
     );
   }
 
@@ -103,6 +114,9 @@ class PlacedBet {
   final double potentialPayout;
   final String status;
   final DateTime createdAt;
+  final DateTime? settledAt;
+  final String? result;
+  final bool payoutCredited;
 
   const PlacedBet({
     required this.id,
@@ -117,6 +131,9 @@ class PlacedBet {
     required this.potentialPayout,
     required this.status,
     required this.createdAt,
+    this.settledAt,
+    this.result,
+    required this.payoutCredited,
   });
 
   factory PlacedBet.fromJson(Map<String, dynamic> json) {
@@ -139,6 +156,11 @@ class PlacedBet {
       potentialPayout: parseNum(json['potentialPayout']),
       status: json['status'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      settledAt: json['settledAt'] != null
+          ? DateTime.parse(json['settledAt'] as String)
+          : null,
+      result: json['result'] as String?,
+      payoutCredited: json['payoutCredited'] as bool? ?? false,
     );
   }
 }

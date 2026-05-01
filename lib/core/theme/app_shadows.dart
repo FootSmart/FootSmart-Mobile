@@ -4,14 +4,14 @@ class AppShadows {
   AppShadows._();
 
   static const BoxShadow cardShadow = BoxShadow(
-    color: Color(0x14000000),
-    blurRadius: 8,
-    offset: Offset(0, 2),
+    color: Color(0x33000000),
+    blurRadius: 24,
+    offset: Offset(0, 10),
   );
 
   static const BoxShadow modalShadow = BoxShadow(
-    color: Color(0x29000000),
-    blurRadius: 24,
-    offset: Offset(0, 8),
+    color: Color(0x47000000),
+    blurRadius: 36,
+    offset: Offset(0, 16),
   );
 }

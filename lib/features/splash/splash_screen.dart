@@ -95,27 +95,33 @@ class _SplashScreenState extends State<SplashScreen>
 
   /// Navigate to next screen after delay
   Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 5));
+    await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
 
     final authService = AuthService(ApiService());
-    final isLoggedIn = await authService.hasValidSession();
-    if (!mounted) return;
-
     final prefs = await SharedPreferences.getInstance();
     final onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
     if (!mounted) return;
-
-    if (isLoggedIn) {
-      AppRoutes.replace(context, AppRoutes.home);
-      return;
-    }
 
     if (!onboardingSeen) {
       AppRoutes.replace(context, AppRoutes.onboarding);
       return;
     }
 
+    final rememberMe = await authService.getRememberMe();
+    if (!mounted) return;
+
+    if (rememberMe && await authService.hasStoredSession()) {
+      final isValid = await authService.hasValidSession();
+      if (!mounted) return;
+
+      if (isValid) {
+        AppRoutes.replace(context, AppRoutes.signIn);
+        return;
+      }
+    }
+
+    if (!mounted) return;
     AppRoutes.replace(context, AppRoutes.signIn);
   }
 

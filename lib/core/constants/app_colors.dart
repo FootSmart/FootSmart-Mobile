@@ -9,43 +9,43 @@ class AppColors {
   // ============ DARK THEME COLORS ============
 
   // Primary Colors (Dark)
-  static const Color primaryDark = Color(0xFF0D1117);
-  static const Color accentGreen = Color(0xFF00C896);
-  static const Color accentOrange = Color(0xFFD29922);
+  static const Color primaryDark = Color(0xFF031411);
+  static const Color accentGreen = Color(0xFFCD8B53);
+  static const Color accentOrange = Color(0xFFE1A86C);
 
   // Background Colors (Dark)
-  static const Color backgroundDark = Color(0xFF161B22);
-  static const Color cardBackground = Color(0xFF1C2128);
-  static const Color surfaceDark = Color(0xFF21262D);
+  static const Color backgroundDark = Color(0xFF0A211D);
+  static const Color cardBackground = Color(0xFF102824);
+  static const Color surfaceDark = Color(0xFF16332E);
 
   // Text Colors (Dark)
-  static const Color textWhite = Color(0xFFF0F6FC);
-  static const Color textGrey = Color(0xFF8B949E);
-  static const Color textGreyLight = Color(0xFFAFB8C1);
-  static const Color textGreyDark = Color(0xFF484F58);
+  static const Color textWhite = Color(0xFFFFF9F2);
+  static const Color textGrey = Color(0xFFD8BC9F);
+  static const Color textGreyLight = Color(0xFFA38C79);
+  static const Color textGreyDark = Color(0xFF8A7464);
 
   // ============ LIGHT THEME COLORS ============
 
   // Primary Colors (Light)
-  static const Color primaryLight = Color(0xFFF6F8FA);
-  static const Color accentGreenLight = Color(0xFF00A87A);
-  static const Color accentOrangeLight = Color(0xFF9A6700);
+  static const Color primaryLight = Color(0xFFF8F1E8);
+  static const Color accentGreenLight = Color(0xFFCD8B53);
+  static const Color accentOrangeLight = Color(0xFF9A6034);
 
   // Background Colors (Light)
-  static const Color backgroundLight = Color(0xFFFFFFFF);
-  static const Color cardBackgroundLight = Color(0xFFFFFFFF);
-  static const Color surfaceLight = Color(0xFFF6F8FA);
+  static const Color backgroundLight = Color(0xFFFFFBF7);
+  static const Color cardBackgroundLight = Color(0xFFFFFBF7);
+  static const Color surfaceLight = Color(0xFFF5EBDD);
 
   // Text Colors (Light)
-  static const Color textDark = Color(0xFF1C2128);
-  static const Color textGreyMedium = Color(0xFF57606A);
-  static const Color textGreyLightMode = Color(0xFFAFB8C1);
+  static const Color textDark = Color(0xFF1E1711);
+  static const Color textGreyMedium = Color(0xFF6D5744);
+  static const Color textGreyLightMode = Color(0xFFA38C79);
 
   // Status Colors
   static const Color success = Color(0xFF1F883D);
   static const Color error = Color(0xFFCF222E);
-  static const Color warning = Color(0xFF9A6700);
-  static const Color info = Color(0xFF0969DA);
+  static const Color warning = Color(0xFFB4703D);
+  static const Color info = Color(0xFF196C87);
 
   // Risk Level Colors
   static const Color riskLow = success;
@@ -62,19 +62,19 @@ class AppColors {
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF0D1117), Color(0xFF161B22)],
+    colors: [Color(0xFF031411), Color(0xFF0A211D)],
   );
 
   static const LinearGradient accentGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF00C896), Color(0xFF00A87A)],
+    colors: [Color(0xFFCD8B53), Color(0xFFE8B484)],
   );
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1C2128), Color(0xFF21262D)],
+    colors: [Color(0xFF102824), Color(0xFF16332E)],
   );
 
   // Overlay & Shadow
@@ -82,8 +82,8 @@ class AppColors {
   static const Color shadowColor = Color(0x14000000);
 
   // Border Colors
-  static const Color borderDark = Color(0x14FFFFFF);
-  static const Color borderLight = Color(0x14000000);
+  static const Color borderDark = Color(0x66CD8B53);
+  static const Color borderLight = Color(0x33CD8B53);
 
   // Bet Type Colors
   static const Color betWin = success;

@@ -212,7 +212,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             // Ticket history
             _sectionLabel('Your Tickets'),
             const SizedBox(height: 12),
-            _TicketCard(
+            const _TicketCard(
               id: '#TK-00421',
               subject: 'Withdrawal delay',
               status: 'Resolved',
@@ -220,12 +220,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               statusColor: AppColors.accentGreen,
             ),
             const SizedBox(height: 10),
-            _TicketCard(
+            const _TicketCard(
               id: '#TK-00387',
               subject: 'KYC document query',
               status: 'Closed',
               date: 'Jan 28, 2026',
-              statusColor: const Color(0xFFA0A4B8),
+              statusColor: Color(0xFFA0A4B8),
             ),
           ],
         ),

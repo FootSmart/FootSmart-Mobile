@@ -142,6 +142,26 @@ class ApiService {
     }
   }
 
+  /// PATCH request
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   static String _messageFromResponseData(dynamic data) {
     if (data == null) return 'Server error occurred';
     if (data is String) return data.isEmpty ? 'Server error occurred' : data;

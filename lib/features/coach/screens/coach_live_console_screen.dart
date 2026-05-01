@@ -164,7 +164,7 @@ class _CoachLiveConsoleScreenState extends State<CoachLiveConsoleScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _ScoreTeam(name: 'Your Team', isHome: true),
+                        const _ScoreTeam(name: 'Your Team', isHome: true),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Column(
@@ -199,7 +199,7 @@ class _CoachLiveConsoleScreenState extends State<CoachLiveConsoleScreen> {
                             ],
                           ),
                         ),
-                        _ScoreTeam(name: 'FC Rival', isHome: false),
+                        const _ScoreTeam(name: 'FC Rival', isHome: false),
                       ],
                     ),
                     const SizedBox(height: 16),

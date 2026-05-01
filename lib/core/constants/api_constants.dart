@@ -2,17 +2,17 @@
 class ApiConstants {
   ApiConstants._();
 
-  /// Base URL
+  /// Base URL — currently pointing to local dev server for testing.
   ///
-  /// - Android emulator: `http://10.0.2.2:3001/api`
-  /// - iOS simulator: `http://localhost:3001/api`
-  /// - Real device: `http://<LAN_IP_OF_PC>:3001/api`
+  /// Local IP  : `http://192.168.1.143:3001/api`  ← active now
+  /// Production: `https://footsmart-backend-production.up.railway.app/api`
   ///
-  /// Override with:
-  /// `flutter run --dart-define=API_BASE_URL=http://<IP>:3001/api`
+  /// To switch back to production, restore the defaultValue above,
+  /// or override at run time:
+  /// `flutter run --dart-define=API_BASE_URL=https://footsmart-backend-production.up.railway.app/api`
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3001/api',
+    defaultValue: 'http://192.168.1.143:3001/api',
   );
 
   // API Version
@@ -62,6 +62,8 @@ class ApiConstants {
   static String teamMatches(String teamId) => '/matches/team/$teamId';
   static String teamForm(String teamId) => '/matches/team/$teamId/form';
   static String teamFixtures(String teamId) => '/matches/team/$teamId/fixtures';
+  /// Finished match history for a team – uses real DB columns, never external_id patterns.
+  static String teamMatchHistory(String teamId) => '/matches/team/$teamId/history';
 
   // ─── Predictions ─────────────────────────────────────────────────────────
   static const String predictions = '/predictions';
@@ -111,6 +113,24 @@ class ApiConstants {
   static const String analyticsMatchInsights = '/analytics/matches/insights';
   static const String analyticsMarketMovements = '/analytics/market/movements';
   static const String analyticsPredictions = '/analytics/predictions';
+    static const String analyticsMatchPredictions =
+            '/analytics/match-predictions';
+
+  // ─── Admin ────────────────────────────────────────────────────────────────
+  static const String adminDashboard = '/admin/dashboard';
+  static const String adminUsers = '/admin/users';
+  static String adminUserPoints(String userId) => '/admin/users/$userId/points';
+  static String adminUserStatus(String userId) => '/admin/users/$userId/status';
+  static String adminUserRole(String userId) => '/admin/users/$userId/role';
+  static String adminUserResetPoints(String userId) =>
+      '/admin/users/$userId/reset-points';
+  static const String adminTestMatch = '/admin/test-match';
+  static String adminFinishMatch(String matchId) => '/admin/matches/$matchId/finish';
+  static const String adminSettle = '/admin/settle';
+  static const String adminMatches = '/admin/matches';
+  static String adminMatchOdds(String matchId) => '/admin/matches/$matchId/odds';
+  static const String adminBets = '/admin/bets';
+  static const String adminFullTestScenario = '/admin/test-scenario/full';
 
   // ─── Headers ─────────────────────────────────────────────────────────────
   static Map<String, String> get defaultHeaders => {

@@ -239,7 +239,8 @@ class _ChannelCard extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.accentGreen,
+            activeThumbColor: AppColors.accentGreen,
+            activeTrackColor: AppColors.accentGreen.withValues(alpha: 0.4),
           ),
         ],
       ),
@@ -270,7 +271,8 @@ class _ToggleRow extends StatelessWidget {
                 .copyWith(color: AppColors.textWhite)),
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.accentGreen,
+        activeThumbColor: AppColors.accentGreen,
+        activeTrackColor: AppColors.accentGreen.withValues(alpha: 0.4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );

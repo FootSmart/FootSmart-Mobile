@@ -105,11 +105,11 @@ class _ResponsibleGamblingScreenState
             const SizedBox(height: 28),
             _sectionLabel('This Week\'s Activity'),
             const SizedBox(height: 12),
-            _ActivityBar(label: 'Wagered', value: 125, max: 200, unit: '\$'),
+            const _ActivityBar(label: 'Wagered', value: 125, max: 200, unit: '\$'),
             const SizedBox(height: 10),
-            _ActivityBar(label: 'Bets Placed', value: 7, max: 30, unit: ''),
+            const _ActivityBar(label: 'Bets Placed', value: 7, max: 30, unit: ''),
             const SizedBox(height: 10),
-            _ActivityBar(
+            const _ActivityBar(
                 label: 'Time Spent', value: 3.5, max: 10, unit: 'h'),
             const SizedBox(height: 28),
             _sectionLabel('Deposit Limits'),
@@ -178,21 +178,21 @@ class _ResponsibleGamblingScreenState
             const SizedBox(height: 28),
             _sectionLabel('Support Resources'),
             const SizedBox(height: 12),
-            _ResourceTile(
+            const _ResourceTile(
               title: 'GamCare',
               subtitle: 'Free support for gambling problems',
               url: 'www.gamcare.org.uk',
               icon: Icons.support_agent_rounded,
             ),
             const SizedBox(height: 10),
-            _ResourceTile(
+            const _ResourceTile(
               title: 'Gamblers Anonymous',
               subtitle: 'Community support groups',
               url: 'www.gamblersanonymous.org',
               icon: Icons.groups_outlined,
             ),
             const SizedBox(height: 10),
-            _ResourceTile(
+            const _ResourceTile(
               title: 'BeGambleAware',
               subtitle: 'Information & advice',
               url: 'www.begambleaware.org',
@@ -379,7 +379,8 @@ class _ToggleCard extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: color,
+            activeThumbColor: color,
+            activeTrackColor: color.withValues(alpha: 0.4),
           ),
         ],
       ),

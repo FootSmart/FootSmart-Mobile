@@ -33,7 +33,7 @@ class CustomButton extends StatelessWidget {
             height: 24,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.textDark),
             ),
           )
         : Row(
@@ -48,14 +48,28 @@ class CustomButton extends StatelessWidget {
             ],
           );
 
+    final buttonChild = switch (variant) {
+      ButtonVariant.primary || ButtonVariant.secondary => ElevatedButton(
+          onPressed: isLoading ? null : onPressed,
+          style: _getButtonStyle(context),
+          child: child,
+        ),
+      ButtonVariant.outlined => OutlinedButton(
+          onPressed: isLoading ? null : onPressed,
+          style: _getButtonStyle(context),
+          child: child,
+        ),
+      ButtonVariant.text => TextButton(
+          onPressed: isLoading ? null : onPressed,
+          style: _getButtonStyle(context),
+          child: child,
+        ),
+    };
+
     final button = SizedBox(
       width: isFullWidth ? double.infinity : null,
       height: height,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: _getButtonStyle(context),
-        child: child,
-      ),
+      child: buttonChild,
     );
 
     return button;
@@ -66,8 +80,7 @@ class CustomButton extends StatelessWidget {
       case ButtonVariant.primary:
         return ElevatedButton.styleFrom(
           backgroundColor: context.accent,
-          foregroundColor:
-              context.isDark ? AppColors.primaryDark : Colors.white,
+          foregroundColor: AppColors.textDark,
           disabledBackgroundColor: context.accent.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -77,7 +90,7 @@ class CustomButton extends StatelessWidget {
       case ButtonVariant.secondary:
         return ElevatedButton.styleFrom(
           backgroundColor: context.accentOrange,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textDark,
           disabledBackgroundColor: context.accentOrange.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -85,7 +98,7 @@ class CustomButton extends StatelessWidget {
           elevation: 0,
         );
       case ButtonVariant.outlined:
-        return ElevatedButton.styleFrom(
+        return OutlinedButton.styleFrom(
           backgroundColor: Colors.transparent,
           foregroundColor: context.accent,
           side: BorderSide(color: context.accent, width: 2),
@@ -95,7 +108,7 @@ class CustomButton extends StatelessWidget {
           elevation: 0,
         );
       case ButtonVariant.text:
-        return ElevatedButton.styleFrom(
+        return TextButton.styleFrom(
           backgroundColor: Colors.transparent,
           foregroundColor: context.accent,
           elevation: 0,
@@ -108,10 +121,10 @@ class CustomButton extends StatelessWidget {
     switch (variant) {
       case ButtonVariant.primary:
         return baseStyle.copyWith(
-          color: context.isDark ? AppColors.primaryDark : Colors.white,
+          color: AppColors.textDark,
         );
       case ButtonVariant.secondary:
-        return baseStyle.copyWith(color: Colors.white);
+        return baseStyle.copyWith(color: AppColors.textDark);
       case ButtonVariant.outlined:
       case ButtonVariant.text:
         return baseStyle.copyWith(color: context.accent);

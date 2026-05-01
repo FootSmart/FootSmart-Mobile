@@ -1,5 +1,7 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../constants/api_constants.dart';
 import '../models/user.dart';
 import 'api_service.dart';
@@ -12,8 +14,10 @@ class AuthService {
 
   AuthService(this._apiService);
 
-  /// Login with email and password
-  Future<AuthResponse> login(LoginRequest request, {bool rememberMe = true}) async {
+  Future<AuthResponse> login(
+    LoginRequest request, {
+    bool rememberMe = true,
+  }) async {
     final response = await _apiService.post(
       ApiConstants.authLogin,
       data: request.toJson(),
@@ -24,7 +28,6 @@ class AuthService {
     return authResponse;
   }
 
-  /// Register new user
   Future<AuthResponse> register(RegisterRequest request) async {
     final response = await _apiService.post(
       ApiConstants.authRegister,
@@ -36,7 +39,6 @@ class AuthService {
     return authResponse;
   }
 
-  /// Request password reset email
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     final response = await _apiService.post(
       ApiConstants.forgotPassword,
@@ -50,9 +52,10 @@ class AuthService {
     };
   }
 
-  /// Reset password with token
   Future<Map<String, dynamic>> resetPassword(
-      String token, String newPassword) async {
+    String token,
+    String newPassword,
+  ) async {
     final response = await _apiService.post(
       ApiConstants.resetPassword,
       data: {
@@ -67,7 +70,6 @@ class AuthService {
     };
   }
 
-  /// Verify reset token validity
   Future<Map<String, dynamic>> verifyResetToken(String token) async {
     final response = await _apiService.post(
       ApiConstants.verifyResetToken,
@@ -77,27 +79,30 @@ class AuthService {
     return response.data;
   }
 
-  /// Save authentication data to local storage
-  Future<void> _saveAuthData(AuthResponse authResponse, {required bool rememberMe}) async {
+  Future<void> _saveAuthData(
+    AuthResponse authResponse, {
+    required bool rememberMe,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_rememberMeKey, rememberMe);
-
-    // Toujours persister le JWT : sinon [syncTokenToApi] / hot restart n’ont rien à charger → 401 sur wallet.
-    // « Se souvenir de moi » reste une préférence (UI / futur), pas une raison d’effacer le token.
     final userJson = authResponse.user.toJson();
-    await prefs.setString(_tokenKey, authResponse.accessToken);
-    await prefs.setString(_userKey, jsonEncode(userJson));
 
+    await prefs.setBool(_rememberMeKey, rememberMe);
     _apiService.setAuthToken(authResponse.accessToken);
+
+    if (rememberMe) {
+      await prefs.setString(_tokenKey, authResponse.accessToken);
+      await prefs.setString(_userKey, jsonEncode(userJson));
+    } else {
+      await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
+    }
   }
 
-  /// Get stored token
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
   }
 
-  /// Get stored user data
   Future<User?> getUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userString = prefs.getString(_userKey);
@@ -107,21 +112,22 @@ class AuthService {
     try {
       final userMap = jsonDecode(userString) as Map<String, dynamic>;
       return User.fromJson(userMap);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
-  /// Check if user is logged in
   Future<bool> isLoggedIn() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
   }
 
-  /// Validate that the persisted token is still accepted by backend.
-  ///
-  /// This avoids navigating to authenticated screens with a stale token,
-  /// which would immediately cause 401/Unauthorized errors after app restart.
+  Future<bool> hasStoredSession() async {
+    final token = await getToken();
+    final user = await getUser();
+    return token != null && token.isNotEmpty && user != null;
+  }
+
   Future<bool> hasValidSession() async {
     await syncTokenToApi();
 
@@ -135,27 +141,28 @@ class AuthService {
       return true;
     } catch (e) {
       if (e is ApiException && e.statusCode == 401) {
-        await logout();
+        await clearSavedSession(clearRememberMe: true);
         return false;
       }
 
-      // Keep local session on transient failures (offline/server hiccups).
       return true;
     }
   }
 
-  /// Logout - clear all stored data
-  Future<void> logout() async {
+  Future<void> logout({bool clearRememberMe = false}) async {
+    await clearSavedSession(clearRememberMe: clearRememberMe);
+  }
+
+  Future<void> clearSavedSession({bool clearRememberMe = false}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
-
-    // Clear token from API service
+    if (clearRememberMe) {
+      await prefs.remove(_rememberMeKey);
+    }
     _apiService.clearAuthToken();
   }
 
-  /// Remet le JWT dans [ApiService] depuis le stockage (ex. après hot restart Flutter :
-  /// le singleton perd la mémoire mais le token peut rester dans SharedPreferences).
   Future<void> syncTokenToApi() async {
     final token = await getToken();
     if (token != null && token.isNotEmpty) {
@@ -163,9 +170,17 @@ class AuthService {
     }
   }
 
-  /// Initialize auth state - call on app startup
   Future<void> initializeAuth() async {
     final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool(_rememberMeKey) ?? false;
+
+    if (!rememberMe) {
+      await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
+      _apiService.clearAuthToken();
+      return;
+    }
+
     final token = prefs.getString(_tokenKey);
 
     if (token != null && token.isNotEmpty) {
@@ -177,17 +192,11 @@ class AuthService {
 
   Future<bool> getRememberMe() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_rememberMeKey) ?? true;
+    return prefs.getBool(_rememberMeKey) ?? false;
   }
 
   Future<void> setRememberMe(bool rememberMe) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_rememberMeKey, rememberMe);
-    if (!rememberMe) {
-      // Si l'utilisateur désactive "remember me", on supprime les données persistées.
-      await prefs.remove(_tokenKey);
-      await prefs.remove(_userKey);
-      _apiService.clearAuthToken();
-    }
   }
 }

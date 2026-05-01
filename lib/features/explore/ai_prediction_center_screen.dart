@@ -1,3 +1,5 @@
+﻿import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
@@ -15,28 +17,82 @@ class AIPredictionCenterScreen extends StatefulWidget {
 
 class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
   final AnalyticsService _analyticsService = AnalyticsService(ApiService());
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   List<dynamic> _predictions = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   String? _error;
+  int _page = 1;
+  final int _pageSize = 10;
+  int _total = 0;
+  int _totalPages = 1;
+  bool _hasMore = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _scrollController.addListener(_onScroll);
+    _loadData(reset: true);
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _searchController.dispose();
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore || _isLoading) return;
+    if (!_hasMore) return;
+    if (_scrollController.position.extentAfter < 240) {
+      _loadData(reset: false);
+    }
+  }
+
+  Future<void> _loadData({required bool reset}) async {
+    if (reset) {
+      setState(() {
+        _isLoading = true;
+        _isLoadingMore = false;
+        _error = null;
+        _page = 1;
+        _total = 0;
+        _totalPages = 1;
+        _hasMore = false;
+        _predictions = [];
+      });
+    } else {
+      setState(() {
+        _isLoadingMore = true;
+        _error = null;
+      });
+    }
     try {
-      final data = await _analyticsService.getPredictions(limit: 20);
+      final pageToLoad = reset ? 1 : _page + 1;
+      final data = await _analyticsService.getMatchPredictions(
+        search: _searchQuery,
+        page: pageToLoad,
+        pageSize: _pageSize,
+      );
+      final items = (data['data'] as List?) ?? [];
+      final total = (data['total'] as num?)?.toInt() ?? 0;
+      final totalPages = (data['totalPages'] as num?)?.toInt() ?? 1;
       if (mounted) {
         setState(() {
-          _predictions = data;
+          _predictions = reset ? items : [..._predictions, ...items];
+          _total = total;
+          _totalPages = totalPages;
+          _page = pageToLoad;
+          _hasMore = _page < _totalPages;
           _isLoading = false;
+          _isLoadingMore = false;
         });
       }
     } catch (e) {
@@ -44,9 +100,20 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
         setState(() {
           _error = e.toString();
           _isLoading = false;
+          _isLoadingMore = false;
         });
       }
     }
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final query = value.trim();
+      if (query == _searchQuery) return;
+      setState(() => _searchQuery = query);
+      _loadData(reset: true);
+    });
   }
 
   double _safeDouble(dynamic v, [double fallback = 0.0]) {
@@ -56,13 +123,21 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
     return fallback;
   }
 
+  double _toPct(double value) {
+    if (value <= 1.0) return value * 100;
+    return value;
+  }
+
   String _confidenceLevel(dynamic item) {
     final raw = (item['confidenceLevel'] ?? item['confidence_level'] ?? '')
         .toString()
         .toUpperCase();
     if (raw == 'HIGH' || raw == 'MEDIUM' || raw == 'LOW') return raw;
-    final pct =
-        _safeDouble(item['confidence'] ?? item['confidencePct'] ?? item['confidence_pct']);
+    final pct = _toPct(_safeDouble(item['confidence'] ??
+      item['confidencePct'] ??
+      item['confidence_pct'] ??
+      item['confidenceScore'] ??
+      item['confidence_score']));
     if (pct >= 70) return 'HIGH';
     if (pct >= 45) return 'MEDIUM';
     return 'LOW';
@@ -123,10 +198,10 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.accentGreen.withOpacity(0.12),
+              color: AppColors.accentGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: AppColors.accentGreen.withOpacity(0.3), width: 1),
+                  color: AppColors.accentGreen.withValues(alpha: 0.3), width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -147,7 +222,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
       body: RefreshIndicator(
         color: AppColors.accentGreen,
         backgroundColor: context.cardBg,
-        onRefresh: _loadData,
+        onRefresh: () => _loadData(reset: true),
         child: _buildBody(),
       ),
     );
@@ -171,7 +246,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
 
   Widget _buildError() {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -179,7 +254,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.betLoss.withOpacity(0.1),
+                color: AppColors.betLoss.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.cloud_off_rounded,
@@ -200,7 +275,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
             ),
             const SizedBox(height: 28),
             ElevatedButton.icon(
-              onPressed: _loadData,
+              onPressed: () => _loadData(reset: true),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Try Again'),
               style: ElevatedButton.styleFrom(
@@ -220,7 +295,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
 
   Widget _buildEmpty() {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -255,10 +330,13 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
 
   Widget _buildContent() {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
       children: [
         _buildBanner(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+        _buildSearchBar(),
+        const SizedBox(height: 16),
         Row(
           children: [
             Text(
@@ -268,7 +346,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
             ),
             const Spacer(),
             Text(
-              '${_predictions.length} matches',
+              '${_predictions.length} of $_total',
               style:
                   AppTextStyles.caption.copyWith(color: context.textSecondary),
             ),
@@ -276,6 +354,8 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
         ),
         const SizedBox(height: 12),
         ..._predictions.map((item) => _buildPredictionCard(item)),
+        const SizedBox(height: 12),
+        _buildPaginationFooter(),
       ],
     );
   }
@@ -288,19 +368,19 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accentGreen.withOpacity(0.18),
-            const Color(0xFF6C63FF).withOpacity(0.12),
+            AppColors.accentGreen.withValues(alpha: 0.18),
+            const Color(0xFF6C63FF).withValues(alpha: 0.12),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accentGreen.withOpacity(0.25)),
+        border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.accentGreen.withOpacity(0.15),
+              color: AppColors.accentGreen.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.psychology_rounded,
@@ -317,7 +397,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Machine learning powered match predictions',
+                  'Latest match predictions with confidence scores',
                   style: AppTextStyles.bodySmall
                       .copyWith(color: context.textSecondary),
                 ),
@@ -329,31 +409,77 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, color: context.iconInactive, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: context.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Search team name (ex: esp)',
+                hintStyle:
+                    AppTextStyles.bodySmall.copyWith(color: context.textSecondary),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          if (_searchQuery.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.close_rounded,
+                  color: context.iconInactive, size: 18),
+              onPressed: () {
+                _searchController.clear();
+                _onSearchChanged('');
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPredictionCard(dynamic item) {
     final home =
         (item['homeTeam'] ?? item['home_team'] ?? 'Home').toString();
     final away =
         (item['awayTeam'] ?? item['away_team'] ?? 'Away').toString();
-    final prediction =
-        (item['prediction'] ?? item['predictedOutcome'] ?? item['predicted_outcome'] ?? 'N/A')
+    final mostLikelyScore =
+        (item['mostLikelyScore'] ?? item['most_likely_score'] ?? 'N/A')
             .toString();
-    final confidence = _safeDouble(
-        item['confidence'] ?? item['confidencePct'] ?? item['confidence_pct']);
+    final confidence = _toPct(_safeDouble(item['confidenceScore'] ??
+        item['confidence_score'] ??
+        item['confidence'] ??
+        item['confidencePct'] ??
+      item['confidence_pct']));
+    final homeProb = _safeDouble(
+      item['homeWinProb'] ?? item['home_win_prob'] ?? item['homeProb']);
+    final drawProb = _safeDouble(item['drawProb'] ?? item['draw_prob']);
+    final awayProb = _safeDouble(
+      item['awayWinProb'] ?? item['away_win_prob'] ?? item['awayProb']);
+    final homeProbPct = _toPct(homeProb);
+    final drawProbPct = _toPct(drawProb);
+    final awayProbPct = _toPct(awayProb);
     final level = _confidenceLevel(item);
     final levelColor = _levelColor(level);
-
-    final homeOdds = _safeDouble(item['homeOdds'] ?? item['home_odds'] ?? item['odds1']);
-    final drawOdds = _safeDouble(item['drawOdds'] ?? item['draw_odds'] ?? item['oddsX']);
-    final awayOdds = _safeDouble(item['awayOdds'] ?? item['away_odds'] ?? item['odds2']);
-
-    // Cotes calculées par le modèle ML Python (null si fallback Supabase)
-    final mlHomeOdds = _safeDouble(item['mlHomeOdds'] ?? item['ml_home_odds']);
-    final mlDrawOdds = _safeDouble(item['mlDrawOdds'] ?? item['ml_draw_odds']);
-    final mlAwayOdds = _safeDouble(item['mlAwayOdds'] ?? item['ml_away_odds']);
-
-    // Source : 'ml' = vient du modèle Python, 'supabase' = fallback bookmaker
-    final source = (item['source'] ?? 'supabase').toString();
-    final isFromMl = source == 'ml';
+    final predictionLabel = _bestPredictionLabel(
+      home: home,
+      away: away,
+      homeProb: homeProbPct,
+      drawProb: drawProbPct,
+      awayProb: awayProbPct,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -361,15 +487,12 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
         color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isFromMl
-              ? AppColors.accentGreen.withOpacity(0.35)
-              : context.borderSubtle,
-          width: isFromMl ? 1.5 : 1.0,
+          color: levelColor.withValues(alpha: 0.2),
+          width: 1.0,
         ),
       ),
       child: Column(
         children: [
-          // ── Top: Teams + Level badge + Source badge ──────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(
@@ -383,16 +506,12 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Badge source : ML (vert) ou Bookmaker (gris)
-                _buildSourceBadge(isFromMl),
-                const SizedBox(width: 6),
                 _buildLevelBadge(level, levelColor),
               ],
             ),
           ),
           const SizedBox(height: 12),
 
-          // ── Prediction label ─────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -401,7 +520,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    prediction,
+                    predictionLabel,
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: levelColor,
                       fontWeight: FontWeight.w600,
@@ -414,7 +533,6 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ── Confidence bar ──────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -446,7 +564,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
                           height: 7,
                           width: constraints.maxWidth,
                           decoration: BoxDecoration(
-                            color: levelColor.withOpacity(0.12),
+                            color: levelColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -458,7 +576,7 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
                             borderRadius: BorderRadius.circular(4),
                             boxShadow: [
                               BoxShadow(
-                                color: levelColor.withOpacity(0.4),
+                                color: levelColor.withValues(alpha: 0.4),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -473,135 +591,75 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
             ),
           ),
           const SizedBox(height: 14),
-
-          // ── Cotes Bookmaker ───────────────────────────────────────────────
-          if (homeOdds > 0 || drawOdds > 0 || awayOdds > 0)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'BOOKMAKER ODDS',
-                    style: AppTextStyles.overline.copyWith(
-                      color: context.textSecondary,
-                      fontSize: 9,
-                      letterSpacing: 1.5,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'PROBABILITIES',
+                  style: AppTextStyles.overline.copyWith(
+                    color: context.textSecondary,
+                    fontSize: 9,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    _buildProbBox(
+                      label: 'HOME',
+                      value: homeProbPct,
+                      color: AppColors.accentGreen,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildProbBox(
+                      label: 'DRAW',
+                      value: drawProbPct,
+                      color: AppColors.accentOrange,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildProbBox(
+                      label: 'AWAY',
+                      value: awayProbPct,
+                      color: const Color(0xFF6C63FF),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            child: Row(
+              children: [
+                Icon(Icons.scoreboard_rounded,
+                    color: context.iconInactive, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  'Most likely score',
+                  style: AppTextStyles.caption
+                      .copyWith(color: context.textSecondary),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: context.cardBg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: context.borderSubtle),
+                  ),
+                  child: Text(
+                    mostLikelyScore,
+                    style: AppTextStyles.label.copyWith(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      _buildOddsBox(
-                        label: '1',
-                        value: homeOdds,
-                        color: const Color(0xFF4A90E2),
-                        flex: 1,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildOddsBox(
-                        label: 'X',
-                        value: drawOdds,
-                        color: AppColors.accentOrange,
-                        flex: 1,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildOddsBox(
-                        label: '2',
-                        value: awayOdds,
-                        color: const Color(0xFF9D4EDD),
-                        flex: 1,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-          // ── Cotes ML (uniquement si viennent du modèle Python) ────────────
-          if (isFromMl && (mlHomeOdds > 0 || mlDrawOdds > 0 || mlAwayOdds > 0))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.psychology_rounded,
-                          color: AppColors.accentGreen, size: 11),
-                      const SizedBox(width: 4),
-                      Text(
-                        'ML MODEL ODDS',
-                        style: AppTextStyles.overline.copyWith(
-                          color: AppColors.accentGreen,
-                          fontSize: 9,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      _buildOddsBox(
-                        label: '1',
-                        value: mlHomeOdds,
-                        color: AppColors.accentGreen,
-                        flex: 1,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildOddsBox(
-                        label: 'X',
-                        value: mlDrawOdds,
-                        color: AppColors.accentGreen,
-                        flex: 1,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildOddsBox(
-                        label: '2',
-                        value: mlAwayOdds,
-                        color: AppColors.accentGreen,
-                        flex: 1,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-          const SizedBox(height: 14),
-        ],
-      ),
-    );
-  }
-
-  // ── Badge source ML / Bookmaker ───────────────────────────────────────────
-  Widget _buildSourceBadge(bool isFromMl) {
-    final color =
-        isFromMl ? AppColors.accentGreen : const Color(0xFFA0A4B8);
-    final label = isFromMl ? 'ML' : 'BK';
-    final icon =
-        isFromMl ? Icons.psychology_rounded : Icons.bar_chart_rounded;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.35), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 9),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: AppTextStyles.overline.copyWith(
-              color: color,
-              fontWeight: FontWeight.w800,
-              fontSize: 8,
-              letterSpacing: 0.5,
+                ),
+              ],
             ),
           ),
         ],
@@ -609,13 +667,25 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
     );
   }
 
+  String _bestPredictionLabel({
+    required String home,
+    required String away,
+    required double homeProb,
+    required double drawProb,
+    required double awayProb,
+  }) {
+    if (homeProb >= drawProb && homeProb >= awayProb) return '$home Win';
+    if (drawProb >= homeProb && drawProb >= awayProb) return 'Draw';
+    return '$away Win';
+  }
+
   Widget _buildLevelBadge(String level, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.35), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -635,33 +705,32 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
     );
   }
 
-  Widget _buildOddsBox({
+  Widget _buildProbBox({
     required String label,
     required double value,
     required Color color,
-    required int flex,
   }) {
     return Expanded(
-      flex: flex,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Column(
           children: [
             Text(
               label,
               style: AppTextStyles.overline.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1),
+                color: color,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
-              value > 0 ? value.toStringAsFixed(2) : '—',
+              '${value.toStringAsFixed(1)}%',
               style: AppTextStyles.label.copyWith(
                 color: context.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -669,6 +738,44 @@ class _AIPredictionCenterScreenState extends State<AIPredictionCenterScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaginationFooter() {
+    if (_isLoadingMore) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.accentGreen,
+            strokeWidth: 2.5,
+          ),
+        ),
+      );
+    }
+
+    if (_hasMore) {
+      return Center(
+        child: OutlinedButton.icon(
+          onPressed: () => _loadData(reset: false),
+          icon: const Icon(Icons.expand_more_rounded, size: 18),
+          label: const Text('Load more'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: context.textPrimary,
+            side: BorderSide(color: context.borderSubtle),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Text(
+        'No more results',
+        style: AppTextStyles.caption.copyWith(color: context.textSecondary),
       ),
     );
   }

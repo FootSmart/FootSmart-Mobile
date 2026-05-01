@@ -322,8 +322,8 @@ class _CoachPerfectPlayerScreenState extends State<CoachPerfectPlayerScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
                   child: _SquadMatchCard(
                     name: 'Ahmed El-Sharkawy',
                     position: 'Striker',
@@ -331,8 +331,8 @@ class _CoachPerfectPlayerScreenState extends State<CoachPerfectPlayerScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
                   child: _SquadMatchCard(
                     name: 'Karim Benzaoui',
                     position: 'Attacking Mid',
@@ -340,8 +340,8 @@ class _CoachPerfectPlayerScreenState extends State<CoachPerfectPlayerScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
                   child: _SquadMatchCard(
                     name: 'Omar Fathi',
                     position: 'Left Wing',
@@ -357,9 +357,9 @@ class _CoachPerfectPlayerScreenState extends State<CoachPerfectPlayerScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                        const SnackBar(
                           content:
-                              const Text('Saved as transfer target profile!'),
+                              Text('Saved as transfer target profile!'),
                           backgroundColor: AppColors.chartPurple,
                         ),
                       );

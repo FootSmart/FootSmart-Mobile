@@ -184,7 +184,7 @@ class _NextMatchCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _TeamBadge(name: 'Your Team', isHome: true),
+              const _TeamBadge(name: 'Your Team', isHome: true),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -206,7 +206,7 @@ class _NextMatchCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _TeamBadge(name: 'Opponent', isHome: false),
+              const _TeamBadge(name: 'Opponent', isHome: false),
             ],
           ),
           const SizedBox(height: 20),
@@ -214,11 +214,11 @@ class _NextMatchCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _CountdownUnit(value: '02', label: 'Days'),
+              const _CountdownUnit(value: '02', label: 'Days'),
               _CountdownSeparator(),
-              _CountdownUnit(value: '14', label: 'Hrs'),
+              const _CountdownUnit(value: '14', label: 'Hrs'),
               _CountdownSeparator(),
-              _CountdownUnit(value: '37', label: 'Min'),
+              const _CountdownUnit(value: '37', label: 'Min'),
             ],
           ),
         ],
@@ -490,7 +490,7 @@ class _AIDailyBriefing extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.lightbulb_outline,
                 color: AppColors.chartPurple,
                 size: 14,

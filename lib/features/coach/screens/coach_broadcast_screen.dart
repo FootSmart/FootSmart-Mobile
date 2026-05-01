@@ -77,8 +77,8 @@ class _CoachBroadcastScreenState extends State<CoachBroadcastScreen>
       _messageController.clear();
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Broadcast sent to all players!'),
+      const SnackBar(
+        content: Text('Broadcast sent to all players!'),
         backgroundColor: AppColors.accentGreen,
       ),
     );
@@ -142,7 +142,7 @@ class _CoachBroadcastScreenState extends State<CoachBroadcastScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.people,
                           color: AppColors.accentGreen,
                           size: 16,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
@@ -88,10 +88,10 @@ class _MarketMovementsScreenState extends State<MarketMovementsScreen> {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.accentOrange.withOpacity(0.12),
+              color: AppColors.accentOrange.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: AppColors.accentOrange.withOpacity(0.35), width: 1),
+                  color: AppColors.accentOrange.withValues(alpha: 0.35), width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -147,7 +147,7 @@ class _MarketMovementsScreenState extends State<MarketMovementsScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.betLoss.withOpacity(0.1),
+                  color: AppColors.betLoss.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.cloud_off_rounded,
@@ -260,19 +260,19 @@ class _MarketMovementsScreenState extends State<MarketMovementsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accentOrange.withOpacity(0.15),
-            const Color(0xFF6C63FF).withOpacity(0.08),
+            AppColors.accentOrange.withValues(alpha: 0.15),
+            const Color(0xFF6C63FF).withValues(alpha: 0.08),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accentOrange.withOpacity(0.25)),
+        border: Border.all(color: AppColors.accentOrange.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.accentOrange.withOpacity(0.15),
+              color: AppColors.accentOrange.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.trending_up_rounded,
@@ -337,14 +337,14 @@ class _MarketMovementsScreenState extends State<MarketMovementsScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: hasValueBet
-              ? AppColors.accentOrange.withOpacity(0.4)
+              ? AppColors.accentOrange.withValues(alpha: 0.4)
               : context.borderSubtle,
           width: hasValueBet ? 1.5 : 1,
         ),
         boxShadow: hasValueBet
             ? [
                 BoxShadow(
-                  color: AppColors.accentOrange.withOpacity(0.08),
+                  color: AppColors.accentOrange.withValues(alpha: 0.08),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 )
@@ -472,13 +472,13 @@ class _MarketMovementsScreenState extends State<MarketMovementsScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.accentOrange.withOpacity(0.25),
-            AppColors.accentOrange.withOpacity(0.12),
+            AppColors.accentOrange.withValues(alpha: 0.25),
+            AppColors.accentOrange.withValues(alpha: 0.12),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: AppColors.accentOrange.withOpacity(0.5), width: 1),
+            color: AppColors.accentOrange.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -507,9 +507,9 @@ class _MarketMovementsScreenState extends State<MarketMovementsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.28)),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
         ),
         child: Column(
           children: [
@@ -613,7 +613,7 @@ class _MarketMovementsScreenState extends State<MarketMovementsScreen> {
                     height: 8,
                     width: constraints.maxWidth,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -627,7 +627,7 @@ class _MarketMovementsScreenState extends State<MarketMovementsScreen> {
                       borderRadius: BorderRadius.circular(4),
                       boxShadow: [
                         BoxShadow(
-                          color: color.withOpacity(0.35),
+                          color: color.withValues(alpha: 0.35),
                           blurRadius: 4,
                           offset: const Offset(0, 1),
                         ),

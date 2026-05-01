@@ -480,7 +480,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   color: context.textSecondary.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 12),
-                AppText(
+                const AppText(
                   'No transactions yet',
                   variant: AppTextVariant.body,
                   tone: AppTextTone.secondary,
@@ -631,7 +631,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     }
 
                     if (snapshot.hasError) {
-                      return Center(
+                      return const Center(
                         child: Text(
                           'Error loading packs',
                           style: TextStyle(color: AppColors.error),
@@ -692,9 +692,10 @@ class _WalletScreenState extends State<WalletScreen> {
 
       await _loadWalletData();
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Points ajoutés avec succès !'),
+        const SnackBar(
+          content: Text('Points ajoutés avec succès !'),
           backgroundColor: AppColors.success,
         ),
       );

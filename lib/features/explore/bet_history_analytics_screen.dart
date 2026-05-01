@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
@@ -210,10 +210,10 @@ class _BetHistoryAnalyticsScreenState
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.accentGreen.withOpacity(0.12),
+                    color: AppColors.accentGreen.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: AppColors.accentGreen.withOpacity(0.3)),
+                        color: AppColors.accentGreen.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     '${_bets.length} bets',
@@ -262,7 +262,7 @@ class _BetHistoryAnalyticsScreenState
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.betLoss.withOpacity(0.1),
+                color: AppColors.betLoss.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.cloud_off_rounded,
@@ -453,7 +453,7 @@ class _BetHistoryAnalyticsScreenState
             label: 'Staked',
             fraction: stakedFrac,
             amount: _currencyFmt.format(_totalStaked),
-            color: context.textSecondary.withOpacity(0.5),
+            color: context.textSecondary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 10),
           // Returned bar
@@ -526,7 +526,7 @@ class _BetHistoryAnalyticsScreenState
                     height: 12,
                     width: constraints.maxWidth,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
@@ -540,7 +540,7 @@ class _BetHistoryAnalyticsScreenState
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
                         BoxShadow(
-                          color: color.withOpacity(0.35),
+                          color: color.withValues(alpha: 0.35),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -718,19 +718,19 @@ class _BetHistoryAnalyticsScreenState
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withOpacity(0.15),
-            color.withOpacity(0.05),
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 30),
@@ -877,7 +877,7 @@ class _BetHistoryAnalyticsScreenState
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 14),
@@ -927,7 +927,7 @@ class _BetHistoryAnalyticsScreenState
                           height: 5,
                           width: constraints.maxWidth,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
+                            color: color.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -976,7 +976,7 @@ class _BetHistoryAnalyticsScreenState
               _buildLegendDot(AppColors.accentGreen, 'Returned'),
               const SizedBox(width: 16),
               _buildLegendDot(
-                  context.textSecondary.withOpacity(0.45), 'Staked'),
+                  context.textSecondary.withValues(alpha: 0.45), 'Staked'),
             ],
           ),
           const SizedBox(height: 20),
@@ -1051,7 +1051,7 @@ class _BetHistoryAnalyticsScreenState
                 width: 14,
                 height: stakedH.clamp(2.0, maxHeight),
                 decoration: BoxDecoration(
-                  color: context.textSecondary.withOpacity(0.3),
+                  color: context.textSecondary.withValues(alpha: 0.3),
                   borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(4)),
                 ),
@@ -1068,7 +1068,7 @@ class _BetHistoryAnalyticsScreenState
                   boxShadow: isProfit
                       ? [
                           BoxShadow(
-                            color: AppColors.accentGreen.withOpacity(0.4),
+                            color: AppColors.accentGreen.withValues(alpha: 0.4),
                             blurRadius: 4,
                             offset: const Offset(0, -1),
                           )
@@ -1155,12 +1155,12 @@ class _BetHistoryAnalyticsScreenState
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: rank == 1
-                  ? AppColors.accentGreen.withOpacity(0.15)
+                  ? AppColors.accentGreen.withValues(alpha: 0.15)
                   : context.surfaceBg,
               shape: BoxShape.circle,
               border: rank == 1
                   ? Border.all(
-                      color: AppColors.accentGreen.withOpacity(0.4),
+                      color: AppColors.accentGreen.withValues(alpha: 0.4),
                       width: 1.5)
                   : null,
             ),
@@ -1195,7 +1195,7 @@ class _BetHistoryAnalyticsScreenState
                       padding: const EdgeInsets.symmetric(
                           horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.12),
+                        color: statusColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
