@@ -450,7 +450,8 @@ class _OverviewTab extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 16),
           // Form section
@@ -462,26 +463,35 @@ class _OverviewTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              // Home form
-              Expanded(
-                child: _FormCard(
-                  teamName: match.homeTeam.name,
-                  form: homeForm,
-                  isHome: true,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Away form
-              Expanded(
-                child: _FormCard(
-                  teamName: match.awayTeam.name,
-                  form: awayForm,
-                  isHome: false,
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cardWidth = constraints.maxWidth < 380
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - 12) / 2;
+
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: cardWidth,
+                    child: _FormCard(
+                      teamName: match.homeTeam.name,
+                      form: homeForm,
+                      isHome: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _FormCard(
+                      teamName: match.awayTeam.name,
+                      form: awayForm,
+                      isHome: false,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
           // W/D/L summary comparison

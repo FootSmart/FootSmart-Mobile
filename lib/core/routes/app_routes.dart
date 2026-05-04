@@ -42,6 +42,7 @@ import 'package:footsmart_pro/features/coach/screens/coach_what_if_screen.dart';
 import 'package:footsmart_pro/features/coach/screens/coach_perfect_player_screen.dart';
 import 'package:footsmart_pro/features/coach/screens/coach_live_console_screen.dart';
 import 'package:footsmart_pro/features/coach/screens/coach_broadcast_screen.dart';
+import 'package:footsmart_pro/features/subscription/subscription_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -67,6 +68,7 @@ class AppRoutes {
   static const String support = '/app/support';
   static const String settings = '/app/settings';
   static const String matchDetail = '/match-detail';
+  static const String subscription = '/app/subscription';
 
   // Explore routes
   static const String advancedMatchInsights = '/explore/match-insights';
@@ -125,6 +127,10 @@ class AppRoutes {
       GoRoute(
           path: paymentMethods,
           builder: (context, state) => const PaymentMethodsScreen()),
+      GoRoute(
+        path: subscription,
+        builder: (context, state) => const SubscriptionScreen(),
+      ),
       GoRoute(
           path: bettingHistory,
           builder: (context, state) => const BettingHistoryScreen()),
@@ -234,6 +240,7 @@ class AppRoutes {
         kyc: (context) => const VerificationStatusScreen(),
         notifications: (context) => const NotificationsScreen(),
         paymentMethods: (context) => const PaymentMethodsScreen(),
+        subscription: (context) => const SubscriptionScreen(),
         bettingHistory: (context) => const BettingHistoryScreen(),
         responsibleGambling: (context) => const ResponsibleGamblingScreen(),
         support: (context) => const HelpSupportScreen(),

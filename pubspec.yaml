@@ -1,7 +1,7 @@
 name: footsmart_pro
 description: Football gambling and analytics platform - 18+ only
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -61,6 +61,11 @@ dependencies:
   local_auth: ^2.1.8
   flutter_stripe: ^12.5.0
   webview_flutter: ^4.13.1
+
+  # Revennue Cat Subscriptions
+  purchases_flutter: ^10.0.1
+  purchases_ui_flutter: ^10.0.1
+
 
 dev_dependencies:
   flutter_test:

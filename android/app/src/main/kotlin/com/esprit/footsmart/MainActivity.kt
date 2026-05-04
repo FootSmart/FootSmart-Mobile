@@ -1,4 +1,4 @@
-package com.example.scfoot_smart
+package com.esprit.footsmart
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

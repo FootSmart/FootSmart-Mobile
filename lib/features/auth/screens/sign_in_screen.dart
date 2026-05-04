@@ -11,6 +11,8 @@ import '../../../core/extensions/theme_context.dart';
 import '../../../core/models/user.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/theme/theme_notifier.dart';
+import '../../../core/services/premium_service.dart';
 
 enum _AuthEntryMode {
   loading,
@@ -34,6 +36,8 @@ class _SignInScreenState extends State<SignInScreen> {
 
   bool _isLoading = false;
   bool _rememberMe = true;
+  late final AuthService _authService;
+  late final PremiumService _premiumService;
   _AuthEntryMode _mode = _AuthEntryMode.loading;
   User? _rememberedUser;
 
@@ -41,6 +45,11 @@ class _SignInScreenState extends State<SignInScreen> {
   void initState() {
     super.initState();
     _authService = AuthService(ApiService());
+    _authService.getRememberMe().then((value) {
+      if (!mounted) return;
+      setState(() => _rememberMe = value);
+    });
+    _premiumService = PremiumService();
     _loadEntryState();
   }
 
@@ -162,6 +171,46 @@ class _SignInScreenState extends State<SignInScreen> {
     _goToAuthenticatedArea(user);
   }
 
+      await _premiumService.hasPremiumAccess(
+        userId: authResponse.user.id,
+      );
+      debugPrint('RevenueCat configured for user: ${authResponse.user.id}');
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back, ${authResponse.user.displayName}!'),
+            backgroundColor: context.accent,
+          ),
+        );
+
+        // Navigate based on role
+        if (authResponse.user.role == 'coach') {
+          AppRoutes.replace(context, AppRoutes.coachHome);
+        } else {
+          AppRoutes.replace(context, AppRoutes.home);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().contains('401') ||
+                      e.toString().contains('Unauthorized')
+                  ? 'Invalid email or password'
+                  : 'Login failed. Please try again.',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
   Future<void> _useAnotherAccount() async {
     await _authService.clearSavedSession(clearRememberMe: true);
     if (!mounted) return;

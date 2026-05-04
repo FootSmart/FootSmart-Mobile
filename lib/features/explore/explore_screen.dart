@@ -11,8 +11,19 @@ import 'package:footsmart_pro/shared/widgets/app_card.dart';
 import 'package:footsmart_pro/shared/widgets/app_text.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
-class ExploreScreen extends StatelessWidget {
+import '../../core/services/api_service.dart';
+import '../../core/services/profile_service.dart';
+
+class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
+
+  @override
+  State<ExploreScreen> createState() => _ExploreScreenState();
+}
+
+class _ExploreScreenState extends State<ExploreScreen> {
+  bool _isSubscribed = false;
+  bool _isLoadingSubscription = true;
 
   static const List<_ExploreFeature> _features = [
     _ExploreFeature(
@@ -37,21 +48,6 @@ class ExploreScreen extends StatelessWidget {
       tone: _FeatureTone.info,
     ),
     _ExploreFeature(
-      title: 'AI Prediction Center',
-      subtitle: 'Model confidence, scenario cards, and key risk factors.',
-      icon: Icons.psychology_outlined,
-      route: AppRoutes.aiPredictionCenter,
-      tone: _FeatureTone.accent,
-      badge: 'AI',
-    ),
-    _ExploreFeature(
-      title: 'Market Movements',
-      subtitle: 'Odds volatility tracking and sharp-money pressure map.',
-      icon: Icons.trending_up,
-      route: AppRoutes.marketMovements,
-      tone: _FeatureTone.warning,
-    ),
-    _ExploreFeature(
       title: 'Analytics Dashboard',
       subtitle: 'Performance scorecards, ROI trendline, and daily form.',
       icon: Icons.bar_chart,
@@ -59,11 +55,29 @@ class ExploreScreen extends StatelessWidget {
       tone: _FeatureTone.success,
     ),
     _ExploreFeature(
+      title: 'AI Prediction Center',
+      subtitle: 'Model confidence, scenario cards, and key risk factors.',
+      icon: Icons.psychology_outlined,
+      route: AppRoutes.aiPredictionCenter,
+      tone: _FeatureTone.accent,
+      badge: 'AI',
+      isPremium: true,
+    ),
+    _ExploreFeature(
+      title: 'Market Movements',
+      subtitle: 'Odds volatility tracking and sharp-money pressure map.',
+      icon: Icons.trending_up,
+      route: AppRoutes.marketMovements,
+      tone: _FeatureTone.warning,
+      isPremium: true,
+    ),
+    _ExploreFeature(
       title: 'Bet History Analytics',
       subtitle: 'Mistake heatmap and recurring outcome clusters.',
       icon: Icons.history,
       route: AppRoutes.betHistoryAnalytics,
       tone: _FeatureTone.danger,
+      isPremium: true,
     ),
     _ExploreFeature(
       title: 'Strategy Builder',
@@ -72,8 +86,36 @@ class ExploreScreen extends StatelessWidget {
       route: AppRoutes.strategyBuilder,
       tone: _FeatureTone.warning,
       badge: 'Lab',
+      isPremium: true,
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubscription();
+  }
+
+  Future<void> _loadSubscription() async {
+    try {
+      final profileService = ProfileService(ApiService());
+      final user = await profileService.getCurrentUser();
+
+      if (!mounted) return;
+
+      setState(() {
+        _isSubscribed = user?.hasPremiumAccess ?? false;
+        _isLoadingSubscription = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSubscribed = false;
+        _isLoadingSubscription = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,15 +150,27 @@ class ExploreScreen extends StatelessWidget {
                   crossAxisCount: columns,
                   crossAxisSpacing: AppSpacing.sm,
                   mainAxisSpacing: AppSpacing.sm,
-                  childAspectRatio: columns == 2 ? 1.02 : 1.2,
+                  childAspectRatio: columns == 2 ? 0.82 : 1.0,
                 ),
                 itemBuilder: (context, index) {
                   final feature = _features[index];
+                  final isLocked = feature.isPremium && !_isSubscribed;
+
                   return _ExploreFeatureCard(
                     feature: feature,
                     toneColor: _toneColor(context, feature.tone),
                     index: index,
-                    onTap: () => AppRoutes.push(context, feature.route),
+                    isLocked: isLocked,
+                    onTap: () {
+                      if (_isLoadingSubscription) return;
+
+                      if (isLocked) {
+                        AppRoutes.push(context, AppRoutes.subscription);
+                        return;
+                      }
+
+                      AppRoutes.push(context, feature.route);
+                    },
                   );
                 },
               ),
@@ -131,7 +185,7 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
-  static void _onNavTap(BuildContext context, int index) {
+  void _onNavTap(BuildContext context, int index) {
     if (index == 0) {
       AppRoutes.push(context, AppRoutes.home);
     } else if (index == 2) {
@@ -143,7 +197,7 @@ class ExploreScreen extends StatelessWidget {
     }
   }
 
-  static Color _toneColor(BuildContext context, _FeatureTone tone) {
+  Color _toneColor(BuildContext context, _FeatureTone tone) {
     final scheme = Theme.of(context).colorScheme;
 
     return switch (tone) {
@@ -231,79 +285,121 @@ class _ExploreFeatureCard extends StatelessWidget {
   final Color toneColor;
   final int index;
   final VoidCallback onTap;
+  final bool isLocked;
 
   const _ExploreFeatureCard({
     required this.feature,
     required this.toneColor,
     required this.index,
     required this.onTap,
+    required this.isLocked,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      onTap: onTap,
-      elevated: true,
-      semanticsLabel: feature.title,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
+    final scheme = Theme
+        .of(context)
+        .colorScheme;
+
+    return Stack(
+      children: [
+        Opacity(
+          opacity: isLocked ? 0.55 : 1,
+          child: AppCard(
+            onTap: onTap,
+            elevated: true,
+            semanticsLabel: feature.title,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: (isLocked ? scheme.onSurface : toneColor)
+                            .withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: Icon(
+                        isLocked ? Icons.lock_outline_rounded : feature.icon,
+                        color: isLocked ? scheme.onSurfaceVariant : toneColor,
+                        size: 20,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (isLocked)
+                      const AppBadge(
+                        label: 'PRO',
+                        variant: AppBadgeVariant.warning,
+                      )
+                    else
+                      if (feature.badge != null)
+                        AppBadge(
+                          label: feature.badge!,
+                          variant: feature.badge == 'AI'
+                              ? AppBadgeVariant.success
+                              : AppBadgeVariant.warning,
+                        ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                AppText(
+                  feature.title,
+                  variant: AppTextVariant.h3,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  fontWeight: FontWeight.w700,
+                  tone: isLocked ? AppTextTone.secondary : AppTextTone.primary,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                AppText(
+                  isLocked
+                      ? '${feature.subtitle} Subscribe to unlock.'
+                      : feature.subtitle,
+                  variant: AppTextVariant.caption,
+                  tone: AppTextTone.secondary,
+                  maxLines: isLocked ? 2 : 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    AppText(
+                      isLocked ? 'Locked' : 'Open',
+                      variant: AppTextVariant.label,
+                      tone: isLocked ? AppTextTone.secondary : AppTextTone.info,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      isLocked
+                          ? Icons.lock_outline_rounded
+                          : Icons.arrow_outward_rounded,
+                      size: 16,
+                      color: isLocked ? scheme.onSurfaceVariant : scheme.info,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isLocked)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
                 decoration: BoxDecoration(
-                  color: toneColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(
+                    color: scheme.warning.withValues(alpha: 0.35),
+                  ),
                 ),
-                child: Icon(feature.icon, color: toneColor, size: 20),
               ),
-              const Spacer(),
-              if (feature.badge != null)
-                AppBadge(
-                  label: feature.badge!,
-                  variant: feature.badge == 'AI'
-                      ? AppBadgeVariant.success
-                      : AppBadgeVariant.warning,
-                ),
-            ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          AppText(
-            feature.title,
-            variant: AppTextVariant.h3,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            fontWeight: FontWeight.w700,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          AppText(
-            feature.subtitle,
-            variant: AppTextVariant.caption,
-            tone: AppTextTone.secondary,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              const AppText(
-                'Open',
-                variant: AppTextVariant.label,
-                tone: AppTextTone.info,
-                fontWeight: FontWeight.w700,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Icon(
-                Icons.arrow_outward_rounded,
-                size: 16,
-                color: Theme.of(context).colorScheme.info,
-              ),
-            ],
-          ),
-        ],
-      ),
+      ],
     )
         .animate(delay: (index * 70).ms)
         .fadeIn(duration: 300.ms)
@@ -327,6 +423,7 @@ class _ExploreFeature {
   final String route;
   final _FeatureTone tone;
   final String? badge;
+  final bool isPremium;
 
   const _ExploreFeature({
     required this.title,
@@ -335,5 +432,6 @@ class _ExploreFeature {
     required this.route,
     required this.tone,
     this.badge,
+    this.isPremium = false,
   });
 }
