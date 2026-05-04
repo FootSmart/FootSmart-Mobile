@@ -102,6 +102,9 @@ class FootballMatch {
 
   /// 'scheduled' | 'live' | 'finished'
   final String status;
+  final DateTime? betClosesAt;
+  final bool? isBettingOpen;
+  final int? secondsUntilClose;
   final int? minute;
   final String? referee;
   final int? attendance;
@@ -127,6 +130,9 @@ class FootballMatch {
     this.htAwayGoals,
     this.result,
     required this.status,
+    this.betClosesAt,
+    this.isBettingOpen,
+    this.secondsUntilClose,
     this.minute,
     this.referee,
     this.attendance,
@@ -155,6 +161,11 @@ class FootballMatch {
         htAwayGoals: json['htAwayGoals'] as int?,
         result: json['result'] as String?,
         status: json['status'] as String? ?? 'scheduled',
+        betClosesAt: json['betClosesAt'] != null
+          ? DateTime.parse(json['betClosesAt'] as String)
+          : null,
+        isBettingOpen: json['isBettingOpen'] as bool?,
+        secondsUntilClose: (json['secondsUntilClose'] as num?)?.toInt(),
         minute: json['minute'] as int?,
         referee: json['referee'] as String?,
         attendance: json['attendance'] as int?,
@@ -187,6 +198,9 @@ class FootballMatch {
         'htAwayGoals': htAwayGoals,
         'result': result,
         'status': status,
+        'betClosesAt': betClosesAt?.toIso8601String(),
+        'isBettingOpen': isBettingOpen,
+        'secondsUntilClose': secondsUntilClose,
         'minute': minute,
         'referee': referee,
         'attendance': attendance,

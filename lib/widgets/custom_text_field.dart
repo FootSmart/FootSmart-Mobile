@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/constants/app_text_styles.dart';
+import '../core/constants/app_colors.dart';
 import '../core/extensions/theme_context.dart';
 
 class CustomTextField extends StatefulWidget {
@@ -111,7 +112,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   ? IconButton(
                       icon: Icon(
                         _isObscured ? Icons.visibility_off : Icons.visibility,
-                        color: context.iconInactive,
+                        color:
+                            _isFocused ? context.accent : context.iconInactive,
                       ),
                       onPressed: _togglePasswordVisibility,
                     )
@@ -145,17 +147,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFFFF4444),
-                  width: 1.5,
-                ),
+                borderSide: const BorderSide(color: AppColors.error, width: 1.5),
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFFFF4444),
-                  width: 2,
-                ),
+                borderSide: const BorderSide(color: AppColors.error, width: 2),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),

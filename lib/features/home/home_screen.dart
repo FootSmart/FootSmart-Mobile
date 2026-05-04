@@ -29,7 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<League> _leagues = [];
   String? _selectedLeagueId; // null = All Leagues
-  List<FootballMatch> _upcomingMatches = [];
+  List<FootballMatch> _allMatches = [];
+  List<FootballMatch> _filteredMatches = [];
 
   bool _leaguesLoading = true;
   bool _matchesLoading = true;
@@ -54,28 +55,42 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  /// Filtre local sur la liste déjà chargée (équipes, ligue, lieu, statut…).
-  List<FootballMatch> get _filteredMatches {
+  List<FootballMatch> _dedupeMatches(List<FootballMatch> rows) {
+    final byId = <String, FootballMatch>{};
+    for (final m in rows) {
+      byId.putIfAbsent(m.id, () => m);
+    }
+    return byId.values.toList();
+  }
+
+  void _applySearch() {
     final q = _matchSearchController.text.trim().toLowerCase();
-    if (q.isEmpty) return _upcomingMatches;
 
-    bool contains(String? s) =>
-        s != null && s.toLowerCase().contains(q);
+    bool contains(String? s) => s != null && s.toLowerCase().contains(q);
 
-    return _upcomingMatches.where((m) {
-      final dateStr = m.matchDate != null
-          ? '${m.matchDate!.day}/${m.matchDate!.month}/${m.matchDate!.year}'
-          : '';
-      return contains(m.leagueName) ||
-          contains(m.leagueCountry) ||
-          contains(m.homeTeam.name) ||
+    final leagueSafe = _selectedLeagueId == null
+        ? _allMatches
+        : _allMatches.where((m) => m.leagueId == _selectedLeagueId).toList();
+
+    if (q.isEmpty) {
+      setState(() {
+        _filteredMatches = _dedupeMatches(leagueSafe);
+      });
+      return;
+    }
+
+    final filtered = leagueSafe.where((m) {
+      return contains(m.homeTeam.name) ||
           contains(m.homeTeam.shortName) ||
           contains(m.awayTeam.name) ||
           contains(m.awayTeam.shortName) ||
-          contains(m.venue) ||
-          contains(m.status) ||
-          dateStr.toLowerCase().contains(q);
+          contains(m.leagueName) ||
+          contains(m.leagueCountry);
     }).toList();
+
+    setState(() {
+      _filteredMatches = _dedupeMatches(filtered);
+    });
   }
 
   Widget _buildMatchSearchField(BuildContext context) {
@@ -84,12 +99,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return TextField(
       controller: _matchSearchController,
       focusNode: _matchSearchFocus,
-      onChanged: (_) => setState(() {}),
+      onChanged: (_) => _applySearch(),
       style: AppTextStyles.bodyMedium.copyWith(color: context.textPrimary),
       cursorColor: context.accent,
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
-        hintText: 'Rechercher un match…',
+        hintText: 'Search teams or leagues',
         hintStyle: AppTextStyles.bodySmall.copyWith(
           color: context.textSecondary,
         ),
@@ -103,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 tooltip: 'Effacer',
                 onPressed: () {
                   _matchSearchController.clear();
-                  setState(() {});
+                  _applySearch();
                   _matchSearchFocus.unfocus();
                 },
                 icon: Icon(
@@ -156,6 +171,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _matchesLoading = true;
       _matchesError = null;
+      _allMatches = [];
+      _filteredMatches = [];
     });
     try {
       final response = await _matchService.getUpcomingMatches(
@@ -164,10 +181,15 @@ class _HomeScreenState extends State<HomeScreen> {
         nextGameweek: true,
       );
       if (mounted) {
+        final deduped = _dedupeMatches(response.matches);
+
         setState(() {
-          _upcomingMatches = response.matches;
+          _allMatches = deduped;
+          _filteredMatches = deduped;
           _matchesLoading = false;
         });
+
+        _applySearch();
       }
     } catch (e) {
       if (mounted) {
@@ -181,7 +203,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _selectLeague(String? leagueId) {
     if (_selectedLeagueId == leagueId) return;
-    setState(() => _selectedLeagueId = leagueId);
+    setState(() {
+      _selectedLeagueId = leagueId;
+      _allMatches = [];
+      _filteredMatches = [];
+    });
     _loadUpcomingMatches(leagueId: leagueId);
   }
 
@@ -280,8 +306,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           separatorBuilder: (_, __) => const SizedBox(width: 8),
                           itemBuilder: (context, index) {
                             final isAll = index == 0;
-                          final leagueId = isAll ? null : _leagues[index - 1].id;
-                          final label = isAll ? 'All Leagues' : _leagues[index - 1].name;
+                            final leagueId =
+                                isAll ? null : _leagues[index - 1].id;
+                            final label =
+                                isAll ? 'All Leagues' : _leagues[index - 1].name;
                             final isSelected = _selectedLeagueId == leagueId;
 
                             return GestureDetector(
@@ -358,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   )
-                else if (_upcomingMatches.isEmpty)
+                else if (_allMatches.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
@@ -405,23 +433,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   )
                 else
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _filteredMatches.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final match = _filteredMatches[index];
-                      return _UpcomingMatchCard(
-                        match: match,
-                        onTap: () => AppRoutes.push(
-                          context,
-                          AppRoutes.matchDetail,
-                          extra: match,
-                        ),
-                      );
-                    },
-                  ),
+                  Builder(builder: (_) {
+                    final renderSafe = _dedupeMatches(_filteredMatches)
+                        .where((m) =>
+                            _selectedLeagueId == null ||
+                            m.leagueId == _selectedLeagueId)
+                        .toList();
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: renderSafe.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final match = renderSafe[index];
+                        return _UpcomingMatchCard(
+                          match: match,
+                          onTap: () => AppRoutes.push(
+                            context,
+                            AppRoutes.matchDetail,
+                            extra: match,
+                          ),
+                        );
+                      },
+                    );
+                  }),
 
                 const SizedBox(height: 100), // Bottom nav spacing
               ],

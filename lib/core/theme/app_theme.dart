@@ -9,15 +9,15 @@ class AppTheme {
 
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF00A87A),
+      seedColor: const Color(0xFFCD8B53),
       brightness: Brightness.light,
     ).copyWith(
-      primary: const Color(0xFF00A87A),
-      secondary: const Color(0xFF6B4FD8),
-      surface: const Color(0xFFFFFFFF),
-      error: const Color(0xFFCF222E),
-      outline: const Color(0x14000000),
-      outlineVariant: const Color(0x0A000000),
+      primary: const Color(0xFFCD8B53),
+      secondary: const Color(0xFF9A6034),
+      surface: const Color(0xFFFFFBF7),
+      error: const Color(0xFFD64C40),
+      outline: const Color(0x33CD8B53),
+      outlineVariant: const Color(0x1FCD8B53),
     );
 
     return _buildTheme(scheme);
@@ -25,15 +25,15 @@ class AppTheme {
 
   static ThemeData dark() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF00C896),
+      seedColor: const Color(0xFFCD8B53),
       brightness: Brightness.dark,
     ).copyWith(
-      primary: const Color(0xFF00C896),
-      secondary: const Color(0xFF7C5CFC),
-      surface: const Color(0xFF1C2128),
-      error: const Color(0xFFF85149),
-      outline: const Color(0x14FFFFFF),
-      outlineVariant: const Color(0x0AFFFFFF),
+      primary: const Color(0xFFCD8B53),
+      secondary: const Color(0xFFE8B484),
+      surface: const Color(0xFF102824),
+      error: const Color(0xFFFF7B72),
+      outline: const Color(0x66CD8B53),
+      outlineVariant: const Color(0x29CD8B53),
     );
 
     return _buildTheme(scheme);
@@ -59,7 +59,7 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: colorScheme.backgroundCard,
-        elevation: colorScheme.brightness == Brightness.dark ? 0 : 1,
+        elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -104,9 +104,9 @@ class AppTheme {
             vertical: AppSpacing.md,
           ),
           backgroundColor: colorScheme.accentPrimary,
-          foregroundColor: colorScheme.brightness == Brightness.dark
-              ? const Color(0xFF0D1117)
-              : Colors.white,
+          foregroundColor: const Color(0xFF1E1711),
+          elevation: 0,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
@@ -121,10 +121,24 @@ class AppTheme {
           ),
           foregroundColor: colorScheme.accentPrimary,
           side: BorderSide(color: colorScheme.accentPrimary),
+          backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
         ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        side: BorderSide(color: colorScheme.borderDefault, width: 1.4),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.accentPrimary;
+          }
+          return colorScheme.backgroundSecondary;
+        }),
+        checkColor: WidgetStateProperty.all(const Color(0xFF1E1711)),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,

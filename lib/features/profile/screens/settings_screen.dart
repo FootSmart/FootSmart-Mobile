@@ -220,9 +220,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             _SettingsCard(
               children: [
-                _InfoRow(label: 'App Version', value: '1.0.0'),
+                const _InfoRow(label: 'App Version', value: '1.0.0'),
                 _divider(),
-                _InfoRow(label: 'Build', value: '2026.02.23'),
+                const _InfoRow(label: 'Build', value: '2026.02.23'),
                 _divider(),
                 _ActionRow(
                   icon: Icons.policy_outlined,
@@ -301,7 +301,8 @@ class _ToggleRow extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.accentGreen,
+            activeThumbColor: AppColors.accentGreen,
+            activeTrackColor: AppColors.accentGreen.withValues(alpha: 0.4),
           ),
         ],
       ),

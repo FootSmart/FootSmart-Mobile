@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
@@ -378,19 +378,19 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFFFFB74D).withOpacity(0.18),
-            AppColors.accentGreen.withOpacity(0.08),
+            const Color(0xFFFFB74D).withValues(alpha: 0.18),
+            AppColors.accentGreen.withValues(alpha: 0.08),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFB74D).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFFFFB74D).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFB74D).withOpacity(0.15),
+              color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.lightbulb_rounded,
@@ -543,9 +543,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
   SliderThemeData _sliderTheme(Color color) {
     return SliderThemeData(
       activeTrackColor: color,
-      inactiveTrackColor: color.withOpacity(0.15),
+      inactiveTrackColor: color.withValues(alpha: 0.15),
       thumbColor: color,
-      overlayColor: color.withOpacity(0.15),
+      overlayColor: color.withValues(alpha: 0.15),
       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
       trackHeight: 4,
     );
@@ -570,7 +570,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.12),
+                color: iconColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: iconColor, size: 16),
@@ -597,10 +597,10 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
-                color: valueLabelColor.withOpacity(0.12),
+                color: valueLabelColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: valueLabelColor.withOpacity(0.3), width: 1),
+                    color: valueLabelColor.withValues(alpha: 0.3), width: 1),
               ),
               child: Text(
                 valueLabel,
@@ -651,7 +651,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.12),
+            color: iconColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: iconColor, size: 16),
@@ -731,7 +731,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
           boxShadow: canSim
               ? [
                   BoxShadow(
-                    color: AppColors.accentGreen.withOpacity(0.35),
+                    color: AppColors.accentGreen.withValues(alpha: 0.35),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   )
@@ -799,12 +799,12 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                pnlColor.withOpacity(0.18),
-                pnlColor.withOpacity(0.05),
+                pnlColor.withValues(alpha: 0.18),
+                pnlColor.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: pnlColor.withOpacity(0.3)),
+            border: Border.all(color: pnlColor.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [
@@ -827,10 +827,10 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: pnlColor.withOpacity(0.12),
+                  color: pnlColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                   border:
-                      Border.all(color: pnlColor.withOpacity(0.35), width: 1),
+                      Border.all(color: pnlColor.withValues(alpha: 0.35), width: 1),
                 ),
                 child: Text(
                   'ROI: ${r.roi >= 0 ? '+' : ''}${r.roi.toStringAsFixed(2)}%',
@@ -915,9 +915,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -957,7 +957,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
+              color: iconColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: iconColor, size: 15),
@@ -1012,7 +1012,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
             label: 'Staked',
             fraction: stakedFrac,
             amount: _fmt(r.totalStaked),
-            color: context.textSecondary.withOpacity(0.45),
+            color: context.textSecondary.withValues(alpha: 0.45),
           ),
           const SizedBox(height: 10),
           _barRow(
@@ -1054,7 +1054,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
                     height: 10,
                     width: constraints.maxWidth,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
@@ -1068,7 +1068,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
                       borderRadius: BorderRadius.circular(5),
                       boxShadow: [
                         BoxShadow(
-                          color: color.withOpacity(0.35),
+                          color: color.withValues(alpha: 0.35),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -1160,7 +1160,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen>
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
+                  color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: iconColor, size: 14),

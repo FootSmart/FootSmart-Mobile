@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
@@ -384,7 +384,7 @@ class _BetCard extends StatelessWidget {
           icon: Icons.schedule_rounded,
           color: AppColors.accentOrange,
           bgColor: const Color(0x22FF7A00),
-          payoutLabel: 'Potential Win',
+          payoutLabel: 'Waiting Result',
           payoutValue: bet.potentialPayout,
           payoutColor: AppColors.accentOrange,
         );
@@ -433,7 +433,9 @@ class _BetCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      _formatDate(bet.createdAt),
+                      bet.status == 'pending'
+                          ? 'Placed ${_formatDate(bet.createdAt)} • Waiting for result'
+                          : 'Settled ${_formatDate(bet.settledAt ?? bet.createdAt)}',
                       style: AppTextStyles.caption.copyWith(
                         color: const Color(0xFF6B7280),
                       ),
@@ -469,7 +471,7 @@ class _BetCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-          Divider(color: const Color(0xFF252B3D).withOpacity(0.8), height: 1),
+          Divider(color: const Color(0xFF252B3D).withValues(alpha: 0.8), height: 1),
           const SizedBox(height: 12),
 
           // ── Métriques : Stake / Odds / Payout ──

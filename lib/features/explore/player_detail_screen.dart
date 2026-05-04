@@ -73,7 +73,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
         child: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1F3A).withOpacity(0.8),
+            color: const Color(0xFF1A1F3A).withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
@@ -102,7 +102,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                 height: 200,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF6C63FF).withOpacity(0.08),
+                  color: const Color(0xFF6C63FF).withValues(alpha: 0.08),
                 ),
               ),
             ),
@@ -114,7 +114,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                 height: 150,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF00D9A3).withOpacity(0.08),
+                  color: const Color(0xFF00D9A3).withValues(alpha: 0.08),
                 ),
               ),
             ),
@@ -140,7 +140,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6C63FF).withOpacity(0.25),
+                              color: const Color(0xFF6C63FF).withValues(alpha: 0.25),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -464,7 +464,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1F3A),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: item.color.withOpacity(0.2)),
+        border: Border.all(color: item.color.withValues(alpha: 0.2)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -536,7 +536,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1F3A),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,14 +618,14 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1F3A),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -664,7 +664,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -691,7 +691,9 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
         p.contains('striker') ||
         p.contains('winger') ||
         p.contains('fwd') ||
-        p.contains('attacker')) return 'FWD';
+        p.contains('attacker')) {
+      return 'FWD';
+    }
     return position.substring(0, position.length.clamp(0, 3)).toUpperCase();
   }
 

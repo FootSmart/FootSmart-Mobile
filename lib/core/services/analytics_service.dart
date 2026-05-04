@@ -104,4 +104,38 @@ class AnalyticsService {
       throw ApiException('Failed to fetch predictions: $e');
     }
   }
+
+  /// GET /analytics/match-predictions
+  Future<Map<String, dynamic>> getMatchPredictions({
+    String? search,
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    try {
+      await _authService.syncTokenToApi();
+      final Map<String, dynamic> params = {
+        'page': page,
+        'pageSize': pageSize,
+      };
+      if (search != null && search.trim().isNotEmpty) {
+        params['search'] = search.trim();
+      }
+      final response = await _apiService.get(
+        ApiConstants.analyticsMatchPredictions,
+        queryParameters: params,
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic>) return data;
+      return {
+        'data': <dynamic>[],
+        'page': page,
+        'pageSize': pageSize,
+        'total': 0,
+        'totalPages': 1,
+      };
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to fetch match predictions: $e');
+    }
+  }
 }

@@ -6,29 +6,29 @@ class AppTextStyles {
   AppTextStyles._();
 
   static TextTheme textTheme(ColorScheme colorScheme) {
-    final base = GoogleFonts.interTextTheme();
+    final base = GoogleFonts.outfitTextTheme();
 
     return base.copyWith(
-      displayLarge: GoogleFonts.inter(
-        fontSize: 28,
+      displayLarge: GoogleFonts.outfit(
+        fontSize: 32,
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.5,
+        letterSpacing: -0.6,
         height: 1.2,
         color: colorScheme.textPrimary,
       ),
-      headlineLarge: GoogleFonts.inter(
-        fontSize: 22,
+      headlineLarge: GoogleFonts.outfit(
+        fontSize: 24,
         fontWeight: FontWeight.w600,
         height: 1.3,
         color: colorScheme.textPrimary,
       ),
-      headlineMedium: GoogleFonts.inter(
-        fontSize: 18,
+      headlineMedium: GoogleFonts.outfit(
+        fontSize: 19,
         fontWeight: FontWeight.w600,
         height: 1.3,
         color: colorScheme.textPrimary,
       ),
-      titleLarge: GoogleFonts.inter(
+      titleLarge: GoogleFonts.outfit(
         fontSize: 15,
         fontWeight: FontWeight.w600,
         height: 1.4,
@@ -54,8 +54,8 @@ class AppTextStyles {
       ),
       labelSmall: GoogleFonts.inter(
         fontSize: 11,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.8,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.9,
         color: colorScheme.textSecondary,
       ),
     );

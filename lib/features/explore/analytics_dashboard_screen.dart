@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
@@ -127,7 +127,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.betLoss.withOpacity(0.1),
+                color: AppColors.betLoss.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.cloud_off_rounded,
@@ -403,12 +403,12 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accentGreen.withOpacity(0.18),
-            const Color(0xFF6C63FF).withOpacity(0.10),
+            AppColors.accentGreen.withValues(alpha: 0.18),
+            const Color(0xFF6C63FF).withValues(alpha: 0.10),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.accentGreen.withOpacity(0.25)),
+        border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,7 +418,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.accentGreen.withOpacity(0.2),
+                  color: AppColors.accentGreen.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.bar_chart_rounded,
@@ -571,7 +571,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -646,7 +646,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -672,9 +672,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       height: 34,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         shape: BoxShape.circle,
-        border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
       ),
       child: Text(
         result,
@@ -783,7 +783,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 14),
@@ -832,7 +832,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                           height: 5,
                           width: constraints.maxWidth,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
+                            color: color.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -884,7 +884,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             children: [
               _buildLegendDot(AppColors.accentGreen, 'Returned'),
               const SizedBox(width: 16),
-              _buildLegendDot(context.textSecondary.withOpacity(0.5), 'Staked'),
+              _buildLegendDot(context.textSecondary.withValues(alpha: 0.5), 'Staked'),
             ],
           ),
           const SizedBox(height: 20),
@@ -958,7 +958,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 width: 10,
                 height: stakedH.clamp(2, maxHeight),
                 decoration: BoxDecoration(
-                  color: context.textSecondary.withOpacity(0.35),
+                  color: context.textSecondary.withValues(alpha: 0.35),
                   borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(3)),
                 ),
@@ -977,7 +977,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                   boxShadow: isProfit
                       ? [
                           BoxShadow(
-                            color: AppColors.accentGreen.withOpacity(0.4),
+                            color: AppColors.accentGreen.withValues(alpha: 0.4),
                             blurRadius: 4,
                             offset: const Offset(0, -1),
                           )
@@ -1021,7 +1021,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 16),

@@ -293,7 +293,7 @@ class _PersonalInformationScreenState
                 ),
               ),
               const SizedBox(height: 32),
-              _SectionLabel('Basic Info'),
+              const _SectionLabel('Basic Info'),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -335,7 +335,7 @@ class _PersonalInformationScreenState
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 24),
-              _SectionLabel('Details'),
+              const _SectionLabel('Details'),
               const SizedBox(height: 12),
               _InfoField(
                 label: 'Date of Birth',
@@ -349,7 +349,7 @@ class _PersonalInformationScreenState
                 enabled: _editing,
               ),
               const SizedBox(height: 24),
-              _SectionLabel('Account'),
+              const _SectionLabel('Account'),
               const SizedBox(height: 12),
               _ReadOnlyRow(
                 label: 'Username',

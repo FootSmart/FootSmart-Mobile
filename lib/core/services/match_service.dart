@@ -60,7 +60,8 @@ class MatchService {
         ApiConstants.upcomingMatches,
         queryParameters: {
           'limit': limit,
-          if (leagueId != null) 'leagueId': leagueId,
+          if (leagueId != null && leagueId.trim().isNotEmpty)
+            'leagueId': leagueId,
           if (nextGameweek) 'nextGameweek': true,
         },
       );
@@ -141,6 +142,41 @@ class MatchService {
           .toList();
     } catch (e) {
       throw ApiException('Failed to fetch team fixtures: $e');
+    }
+  }
+
+  /// Finished match history for a specific team
+  ///
+  /// Returns matches where [teamId] was home or away and the match is
+  /// finished (status == 'finished' OR goals are set).
+  /// Sorted newest first. Scores come from [homeGoals]/[awayGoals];
+  /// external_id is never parsed to infer results.
+  Future<List<FootballMatch>> getTeamMatchHistory(
+    String teamId, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _apiService.get(
+        ApiConstants.teamMatchHistory(teamId),
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+        },
+      );
+      final data = response.data;
+      // Backend wraps in { matches: [...], total, limit, offset }
+      if (data is Map<String, dynamic> && data.containsKey('matches')) {
+        return (data['matches'] as List<dynamic>)
+            .map((m) => FootballMatch.fromJson(m as Map<String, dynamic>))
+            .toList();
+      }
+      // Fallback: bare list
+      return (data as List<dynamic>)
+          .map((m) => FootballMatch.fromJson(m as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw ApiException('Failed to fetch team match history: $e');
     }
   }
 }

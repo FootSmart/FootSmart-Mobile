@@ -416,7 +416,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
                 margin: const EdgeInsets.only(right: 10),
                 decoration: BoxDecoration(
                   color: selected
-                      ? stat.color.withOpacity(0.18)
+                      ? stat.color.withValues(alpha: 0.18)
                       : const Color(0xFF1A1F3A),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
@@ -550,7 +550,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: sel
-              ? const Color(0xFF6C63FF).withOpacity(0.25)
+              ? const Color(0xFF6C63FF).withValues(alpha: 0.25)
               : const Color(0xFF1A1F3A),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
@@ -597,7 +597,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: sel
-                      ? const Color(0xFF00D9A3).withOpacity(0.15)
+                      ? const Color(0xFF00D9A3).withValues(alpha: 0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
@@ -616,7 +616,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
                 ),
               ),
             );
-          })).toList(),
+          }).toList()),
           const Spacer(),
           // Active-only toggle
           GestureDetector(
@@ -626,7 +626,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: _activeOnly
-                    ? const Color(0xFFFFB74D).withOpacity(0.15)
+                    ? const Color(0xFFFFB74D).withValues(alpha: 0.15)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
@@ -725,18 +725,18 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
     final players = _filteredPlayers;
 
     if (players.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_search, size: 56, color: const Color(0xFF2A2F4A)),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.person_search, size: 56, color: Color(0xFF2A2F4A)),
+            SizedBox(height: 16),
+            Text(
               'No players found',
               style: TextStyle(color: Color(0xFF8E92BC), fontSize: 16),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'Try adjusting filters or selecting a different team',
               style: TextStyle(color: Color(0xFF4A4F6A), fontSize: 13),
               textAlign: TextAlign.center,
@@ -783,7 +783,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: rank <= 3
-                ? rankColor.withOpacity(0.3)
+                ? rankColor.withValues(alpha: 0.3)
                 : const Color(0xFF2A2F4A),
             width: rank <= 3 ? 1.5 : 1,
           ),
@@ -795,7 +795,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                color: rankColor.withOpacity(0.15),
+                color: rankColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
@@ -826,8 +826,8 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    statColor.withOpacity(0.3),
-                    statColor.withOpacity(0.1),
+                    statColor.withValues(alpha: 0.3),
+                    statColor.withValues(alpha: 0.1),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -917,7 +917,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: statColor.withOpacity(0.15),
+                    color: statColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -989,7 +989,7 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -1024,7 +1024,9 @@ class _PlayersHubScreenState extends State<PlayersHubScreen> {
         p.contains('striker') ||
         p.contains('winger') ||
         p.contains('fwd') ||
-        p.contains('attacker')) return 'FWD';
+        p.contains('attacker')) {
+      return 'FWD';
+    }
     return position.substring(0, position.length.clamp(0, 3)).toUpperCase();
   }
 

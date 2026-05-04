@@ -77,7 +77,10 @@ extension ThemeContext on BuildContext {
       : LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [colorScheme.backgroundSecondary, colorScheme.backgroundPrimary],
+          colors: [
+            colorScheme.backgroundSecondary,
+            colorScheme.backgroundPrimary
+          ],
         );
 
   /// Background gradient (for onboarding, splash)
@@ -85,11 +88,11 @@ extension ThemeContext on BuildContext {
       ? const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0D1117), Color(0xFF161B22)],
+          colors: [Color(0xFF02110F), Color(0xFF08221D), Color(0xFF031411)],
         )
       : const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFF8F9FB), Color(0xFFFFFFFF)],
+          colors: [Color(0xFFF8F1E8), Color(0xFFFFFBF7)],
         );
 }

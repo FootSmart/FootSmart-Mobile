@@ -6,6 +6,7 @@ import '../../core/services/league_service.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/extensions/theme_context.dart';
+import 'team_match_history_screen.dart';
 
 class CompetitionHubScreen extends StatefulWidget {
   const CompetitionHubScreen({super.key});
@@ -788,7 +789,19 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen>
                           positionColor = AppColors.error;
                         }
 
-                        return Container(
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TeamMatchHistoryScreen(
+                                  teamId: standing.teamId,
+                                  teamName: standing.teamName,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
                           padding: const EdgeInsets.symmetric(
                               vertical: 14, horizontal: 16),
                           decoration: BoxDecoration(
@@ -860,14 +873,27 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen>
                                 const SizedBox(width: 12),
                               ],
                               Expanded(
-                                child: Text(
-                                  standing.teamName,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: context.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        standing.teamName,
+                                        style: AppTextStyles.bodyMedium.copyWith(
+                                          color: context.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 16,
+                                      color: context.textSecondary
+                                          .withValues(alpha: 0.4),
+                                    ),
+                                  ],
                                 ),
                               ),
                               SizedBox(
@@ -918,6 +944,7 @@ class _CompetitionHubScreenState extends State<CompetitionHubScreen>
                               ),
                             ],
                           ),
+                        ),
                         );
                       },
                     ),

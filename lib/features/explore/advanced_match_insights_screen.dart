@@ -140,7 +140,7 @@ class _AdvancedMatchInsightsScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline_rounded,
+            const Icon(Icons.error_outline_rounded,
                 color: AppColors.betLoss, size: 56),
             const SizedBox(height: 16),
             Text(
@@ -297,7 +297,7 @@ class _AdvancedMatchInsightsScreenState
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.accentGreen.withOpacity(0.12),
+              color: AppColors.accentGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.timeline_rounded,
@@ -351,7 +351,7 @@ class _AdvancedMatchInsightsScreenState
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -373,7 +373,7 @@ class _AdvancedMatchInsightsScreenState
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: (value.clamp(0, 100) / 100),
-              backgroundColor: color.withOpacity(0.12),
+              backgroundColor: color.withValues(alpha: 0.12),
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: 4,
             ),
@@ -396,7 +396,7 @@ class _AdvancedMatchInsightsScreenState
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF4A90E2).withOpacity(0.12),
+              color: const Color(0xFF4A90E2).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.swap_horiz_rounded,
@@ -418,7 +418,7 @@ class _AdvancedMatchInsightsScreenState
                   child: LinearProgressIndicator(
                     value: btts.clamp(0, 100) / 100,
                     backgroundColor:
-                        const Color(0xFF4A90E2).withOpacity(0.12),
+                        const Color(0xFF4A90E2).withValues(alpha: 0.12),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                         Color(0xFF4A90E2)),
                     minHeight: 6,
@@ -474,7 +474,7 @@ class _AdvancedMatchInsightsScreenState
             height: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: badgeColor.withOpacity(0.14),
+              color: badgeColor.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
             child: Text(

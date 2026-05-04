@@ -319,10 +319,11 @@ class _FootballAnalyticsIconPainter extends CustomPainter {
       final angle = -1.5708 + (i * 6.2832 / 5);
       final x = cx + r * cos(angle);
       final y = cy + r * sin(angle);
-      if (i == 0)
+      if (i == 0) {
         pentPath.moveTo(x, y);
-      else
+      } else {
         pentPath.lineTo(x, y);
+      }
     }
     pentPath.close();
     paint.strokeWidth = 1.5;

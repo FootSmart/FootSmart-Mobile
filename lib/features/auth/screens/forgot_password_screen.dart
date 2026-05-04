@@ -4,6 +4,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/extensions/theme_context.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../shared/widgets/app_card.dart';
 import '../../../core/utils/validators.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/custom_text_field.dart';
@@ -115,131 +116,139 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: context.iconColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Forgot Password',
-          style: TextStyle(color: context.textPrimary),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 20),
-
-                // Lock Icon
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: context.accent.withValues(alpha: 0.1),
-                  ),
-                  child: Icon(
-                    Icons.lock_reset,
-                    size: 80,
-                    color: context.accent,
-                  ),
+      body: Container(
+        decoration: BoxDecoration(gradient: context.bgGradient),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -80,
+              right: -50,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: context.accent.withValues(alpha: 0.08),
                 ),
-
-                const SizedBox(height: 30),
-
-                // Title
-                Text(
-                  'Reset Your Password',
-                  style: AppTextStyles.h1.copyWith(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 10),
-
-                // Description
-                Text(
-                  _emailSent
-                      ? 'We\'ve sent a password reset link to your email. Please check your inbox.'
-                      : 'Enter your email address and we\'ll send you a link to reset your password.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: context.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 40),
-
-                // Email Field
-                CustomTextField(
-                  controller: _emailController,
-                  label: 'Email Address',
-                  hint: 'Enter your email',
-                  prefixIcon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.validateEmail,
-                  enabled: !_isLoading && canResend,
-                ),
-
-                const SizedBox(height: 24),
-
-                // Send Button
-                CustomButton(
-                  text: _emailSent && !canResend
-                      ? 'Resend in ${_countdown}s'
-                      : _emailSent
-                          ? 'Resend Verification Link'
-                          : 'Send Verification Link',
-                  onPressed: canResend && !_isLoading ? _sendResetEmail : null,
-                  isLoading: _isLoading,
-                ),
-
-                if (_emailSent && canResend) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'Didn\'t receive the email? Check your spam folder or try again.',
-                    style: AppTextStyles.caption.copyWith(
-                      color: context.textTertiary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-
-                const SizedBox(height: 30),
-
-                // Back to Sign In
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'Remember your password? ',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: context.textSecondary,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'Sign In',
-                          style: TextStyle(
-                            color: context.accent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          icon:
+                              Icon(Icons.arrow_back, color: context.iconColor),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      AppCard(
+                        elevated: true,
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: context.accent.withValues(alpha: 0.1),
+                              ),
+                              child: Icon(
+                                Icons.lock_reset,
+                                size: 56,
+                                color: context.accent,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Reset your password',
+                              style: AppTextStyles.h1.copyWith(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: context.textPrimary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _emailSent
+                                  ? 'We sent a password reset link to your email. Please check your inbox.'
+                                  : 'Enter your email address and we will send you a secure reset link.',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: context.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 32),
+                            CustomTextField(
+                              controller: _emailController,
+                              label: 'Email address',
+                              hint: 'Enter your email',
+                              prefixIcon: Icons.email_outlined,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: Validators.validateEmail,
+                              enabled: !_isLoading && canResend,
+                            ),
+                            const SizedBox(height: 24),
+                            CustomButton(
+                              text: _emailSent && !canResend
+                                  ? 'Resend in ${_countdown}s'
+                                  : _emailSent
+                                      ? 'Resend reset link'
+                                      : 'Send reset link',
+                              onPressed: canResend && !_isLoading
+                                  ? _sendResetEmail
+                                  : null,
+                              isLoading: _isLoading,
+                            ),
+                            if (_emailSent && canResend) ...[
+                              const SizedBox(height: 16),
+                              Text(
+                                'Did not receive the email? Check your spam folder or try again.',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: context.textTertiary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                            const SizedBox(height: 20),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: RichText(
+                                text: TextSpan(
+                                  text: 'Remember your password? ',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: context.textSecondary,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Sign In',
+                                      style: TextStyle(
+                                        color: context.accent,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
