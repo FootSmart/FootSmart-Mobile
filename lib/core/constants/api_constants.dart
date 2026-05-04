@@ -12,7 +12,7 @@ class ApiConstants {
   /// `flutter run --dart-define=API_BASE_URL=https://footsmart-backend-production.up.railway.app/api`
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.143:3001/api',
+    defaultValue: 'https://footsmart-backend-production.up.railway.app/api',
   );
 
   // API Version
