@@ -6,13 +6,17 @@ import '../../core/extensions/theme_context.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/models/wallet.dart';
+import '../../core/models/user.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/wallet_service.dart';
+import '../../core/utils/account_access_helper.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/app_skeleton.dart';
 import '../../shared/widgets/app_text.dart';
+import '../../shared/widgets/inactive_account_banner.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/stripe_hosted_setup_page.dart';
 
@@ -27,11 +31,13 @@ class _WalletScreenState extends State<WalletScreen> {
   static const double _usdPerPoint = 4.99 / 500.0;
 
   late final WalletService _walletService;
+  late final ProfileService _profileService;
   final TextEditingController _depositController = TextEditingController();
   final TextEditingController _withdrawController = TextEditingController();
 
   WalletBalance? _balance;
   List<WalletTransaction> _transactions = [];
+  User? _user;
 
   bool _isLoadingBalance = true;
   bool _isLoadingTransactions = true;
@@ -44,6 +50,7 @@ class _WalletScreenState extends State<WalletScreen> {
   void initState() {
     super.initState();
     _walletService = WalletService(ApiService());
+    _profileService = ProfileService(ApiService());
     _bootstrapWallet();
   }
 
@@ -67,10 +74,19 @@ class _WalletScreenState extends State<WalletScreen> {
       }
       return;
     }
+    await _loadUserStatus();
     await Future.wait([
       _loadBalance(),
       _loadTransactions(),
     ]);
+  }
+
+  Future<void> _loadUserStatus() async {
+    try {
+      final user = await _profileService.getCurrentUserFromDatabase();
+      if (!mounted) return;
+      setState(() => _user = user);
+    } catch (_) {}
   }
 
   Future<void> _loadBalance() async {
@@ -127,6 +143,11 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> _handleWithdrawPoints(int points) async {
+    if (!canUseProtectedFeatures(_user)) {
+      await showKycRequiredDialog(context);
+      return;
+    }
+
     setState(() => _isProcessingWithdraw = true);
 
     try {
@@ -202,6 +223,11 @@ class _WalletScreenState extends State<WalletScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            InactiveAccountBanner(
+                              isVisible: _user != null &&
+                                  !canUseProtectedFeatures(_user),
+                            ),
+                            const SizedBox(height: 16),
                             const SizedBox(height: 24),
                             _buildTransactionSection(),
                           ],
@@ -629,6 +655,11 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> _showDepositDialog() async {
+    if (!canUseProtectedFeatures(_user)) {
+      await showKycRequiredDialog(context);
+      return;
+    }
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
@@ -691,6 +722,11 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> _handleBuyPointsPack(String packId) async {
+    if (!canUseProtectedFeatures(_user)) {
+      await showKycRequiredDialog(context);
+      return;
+    }
+
     try {
       await AuthService(ApiService()).syncTokenToApi();
       final checkoutUrl = await _walletService.buyPointsPack(packId: packId);
@@ -737,6 +773,11 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> _showWithdrawDialog() async {
+    if (!canUseProtectedFeatures(_user)) {
+      await showKycRequiredDialog(context);
+      return;
+    }
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {

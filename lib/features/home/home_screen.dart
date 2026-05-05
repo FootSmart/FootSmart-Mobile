@@ -7,13 +7,17 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/models/league.dart';
 import '../../core/models/match.dart';
+import '../../core/models/user.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/services/league_service.dart';
 import '../../core/services/match_service.dart';
+import '../../core/utils/account_access_helper.dart';
 import '../../shared/widgets/app_badge.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/app_skeleton.dart';
 import '../../shared/widgets/app_text.dart';
+import '../../shared/widgets/inactive_account_banner.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -31,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedLeagueId; // null = All Leagues
   List<FootballMatch> _allMatches = [];
   List<FootballMatch> _filteredMatches = [];
+  User? _user;
 
   bool _leaguesLoading = true;
   bool _matchesLoading = true;
@@ -45,7 +50,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final api = ApiService();
     _leagueService = LeagueService(api);
     _matchService = MatchService(api);
+    _loadUser();
     _loadInitialData();
+  }
+
+  Future<void> _loadUser() async {
+    final user = await AuthService(ApiService()).getUser();
+    if (!mounted) return;
+    setState(() => _user = user);
   }
 
   @override
@@ -229,6 +241,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   onNotificationsTap: () =>
                       AppRoutes.push(context, AppRoutes.notifications),
                 ),
+
+                if (_user != null && !canUseProtectedFeatures(_user)) ...[
+                  const SizedBox(height: 16),
+                  const InactiveAccountBanner(isVisible: true),
+                ],
 
                 const SizedBox(height: 24),
 

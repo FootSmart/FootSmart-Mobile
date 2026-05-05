@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/models/user.dart';
+import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/services/auth_service.dart';
 import 'package:footsmart_pro/core/services/profile_service.dart';
@@ -69,9 +70,11 @@ class _VerificationStatusScreenState extends State<VerificationStatusScreen> {
   bool _isApproved(String status) => _norm(status) == 'approved';
 
   bool _isPending(String status) {
-    const pendingStates = {'pending', 'in_review', 'under_review'};
+    const pendingStates = {'pending', 'in_review', 'under_review', 'manual_review'};
     return pendingStates.contains(_norm(status));
   }
+
+  bool _isManualReview(String status) => _norm(status) == 'manual_review';
 
   bool _isRejected(String status) {
     const rejectedStates = {'rejected', 'failed', 'declined'};
@@ -131,6 +134,14 @@ class _VerificationStatusScreenState extends State<VerificationStatusScreen> {
                         user: _user!,
                         lastUpdated: _lastUpdated,
                         isRefreshing: _isRefreshing,
+                      ),
+                      const SizedBox(height: 20),
+                      _KycActionBar(
+                        kycStatus: _user!.kycStatus,
+                        isApproved: _isApproved(_user!.kycStatus),
+                        isRejected: _isRejected(_user!.kycStatus),
+                        isPending: _isPending(_user!.kycStatus),
+                        isManualReview: _isManualReview(_user!.kycStatus),
                       ),
                       const SizedBox(height: 20),
                       OutlinedButton.icon(
@@ -605,6 +616,98 @@ class _VerificationStep extends StatelessWidget {
             ),
           ),
           Icon(statusIcon, color: color, size: 22),
+        ],
+      ),
+    );
+  }
+}
+
+class _KycActionBar extends StatelessWidget {
+  const _KycActionBar({
+    required this.kycStatus,
+    required this.isApproved,
+    required this.isRejected,
+    required this.isPending,
+    required this.isManualReview,
+  });
+
+  final String kycStatus;
+  final bool isApproved;
+  final bool isRejected;
+  final bool isPending;
+  final bool isManualReview;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isApproved) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A2E24),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF2C6042)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.verified_rounded,
+                color: AppColors.accentGreen, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Your account is fully verified.',
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: const Color(0xFFCBE7D8)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    String message =
+        'Complete KYC to unlock betting, wallet, and protected features.';
+    String buttonLabel = 'Start verification';
+
+    if (isRejected) {
+      message = 'Verification rejected. Please retry with updated documents.';
+      buttonLabel = 'Retry verification';
+    } else if (isPending || isManualReview) {
+      message =
+          'Verification is in review. We will notify you after approval.';
+      buttonLabel = 'View verification';
+    } else if (kycStatus.trim().isEmpty || kycStatus == 'not_started') {
+      buttonLabel = 'Start verification';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F2E),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF252B3D)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: AppTextStyles.bodySmall
+                .copyWith(color: const Color(0xFFA0A4B8)),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => AppRoutes.push(context, AppRoutes.kyc),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentGreen,
+                foregroundColor: const Color(0xFF0B1220),
+              ),
+              child: Text(buttonLabel),
+            ),
+          ),
         ],
       ),
     );

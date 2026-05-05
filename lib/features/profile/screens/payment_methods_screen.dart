@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/constants/app_text_styles.dart';
 import 'package:footsmart_pro/core/models/wallet.dart';
+import 'package:footsmart_pro/core/models/user.dart';
 import 'package:footsmart_pro/core/services/api_service.dart'
     show ApiException, ApiService;
 import 'package:footsmart_pro/core/services/auth_service.dart';
+import 'package:footsmart_pro/core/services/profile_service.dart';
 import 'package:footsmart_pro/core/services/stripe_service.dart';
 import 'package:footsmart_pro/core/services/wallet_service.dart';
+import 'package:footsmart_pro/core/utils/account_access_helper.dart';
+import 'package:footsmart_pro/shared/widgets/inactive_account_banner.dart';
 import 'package:footsmart_pro/widgets/stripe_hosted_setup_page.dart';
 import 'package:intl/intl.dart';
 
@@ -27,19 +31,31 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   List<WalletTransaction> _walletTransactions = [];
   bool _txLoading = true;
+  User? _user;
+  late final ProfileService _profileService;
 
   @override
   void initState() {
     super.initState();
+    _profileService = ProfileService(ApiService());
     _initData();
   }
 
   Future<void> _initData() async {
     await AuthService(ApiService()).syncTokenToApi();
+    await _loadUserStatus();
     await Future.wait([
       _refreshSavedCards(),
       _refreshWalletTransactions(),
     ]);
+  }
+
+  Future<void> _loadUserStatus() async {
+    try {
+      final user = await _profileService.getCurrentUserFromDatabase();
+      if (!mounted) return;
+      setState(() => _user = user);
+    } catch (_) {}
   }
 
   Future<void> _refreshSavedCards() async {
@@ -79,6 +95,11 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   bool get _hasStripeCards => _savedCards.isNotEmpty;
 
   Future<void> _linkStripeCard() async {
+    if (!canUseProtectedFeatures(_user)) {
+      await showKycRequiredDialog(context);
+      return;
+    }
+
     if (_stripeLoading) return;
     setState(() => _stripeLoading = true);
     try {
@@ -182,6 +203,10 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            InactiveAccountBanner(
+              isVisible: _user != null && !canUseProtectedFeatures(_user),
+            ),
+            const SizedBox(height: 16),
             _sectionLabel('Saved Cards'),
             const SizedBox(height: 16),
             SizedBox(
