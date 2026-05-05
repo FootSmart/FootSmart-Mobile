@@ -19,6 +19,9 @@ import 'package:footsmart_pro/features/onboarding/onboarding_screen.dart';
 import 'package:footsmart_pro/features/profile/profile_screen.dart';
 import 'package:footsmart_pro/features/profile/screens/personal_information_screen.dart';
 import 'package:footsmart_pro/features/profile/screens/verification_status_screen.dart';
+import 'package:footsmart_pro/features/kyc/screens/kyc_upload_screen.dart';
+import 'package:footsmart_pro/features/kyc/screens/kyc_review_screen.dart';
+import 'package:footsmart_pro/features/kyc/screens/kyc_success_screen.dart';
 import 'package:footsmart_pro/features/profile/screens/notifications_screen.dart';
 import 'package:footsmart_pro/features/profile/screens/payment_methods_screen.dart';
 import 'package:footsmart_pro/features/profile/screens/betting_history_screen.dart';
@@ -60,6 +63,9 @@ class AppRoutes {
   static const String profile = '/app/profile';
   static const String profileInfo = '/app/profile/info';
   static const String kyc = '/app/kyc';
+  static const String kycReview = '/app/kyc-review';
+  static const String kycSuccess = '/app/kyc-success';
+  static const String verificationStatus = '/app/verification-status';
   static const String notifications = '/app/notifications';
   static const String paymentMethods = '/app/payment-methods';
   static const String bettingHistory = '/app/profile/history';
@@ -116,8 +122,15 @@ class AppRoutes {
       GoRoute(
           path: profileInfo,
           builder: (context, state) => const PersonalInformationScreen()),
-      GoRoute(
-          path: kyc,
+        GoRoute(path: kyc, builder: (context, state) => const KycUploadScreen()),
+        GoRoute(
+          path: kycReview,
+          builder: (context, state) => const KycReviewScreen()),
+        GoRoute(
+          path: kycSuccess,
+          builder: (context, state) => const KycSuccessScreen()),
+        GoRoute(
+          path: verificationStatus,
           builder: (context, state) => const VerificationStatusScreen()),
       GoRoute(
           path: notifications,
@@ -231,7 +244,10 @@ class AppRoutes {
         wallet: (context) => const WalletScreen(),
         profile: (context) => const ProfileScreen(),
         profileInfo: (context) => const PersonalInformationScreen(),
-        kyc: (context) => const VerificationStatusScreen(),
+        kyc: (context) => const KycUploadScreen(),
+        kycReview: (context) => const KycReviewScreen(),
+        kycSuccess: (context) => const KycSuccessScreen(),
+        verificationStatus: (context) => const VerificationStatusScreen(),
         notifications: (context) => const NotificationsScreen(),
         paymentMethods: (context) => const PaymentMethodsScreen(),
         bettingHistory: (context) => const BettingHistoryScreen(),

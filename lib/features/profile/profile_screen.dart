@@ -5,6 +5,8 @@ import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/models/user.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/services/profile_service.dart';
+import 'package:footsmart_pro/core/utils/account_access_helper.dart';
+import 'package:footsmart_pro/shared/widgets/inactive_account_banner.dart';
 import '../../widgets/bottom_nav_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -60,7 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _ProfileMenuItem(
           icon: Icons.verified_user_outlined,
           label: 'Verification Status',
-          route: '/app/kyc',
+          route: AppRoutes.verificationStatus,
           isVerified: true,
         ),
         _ProfileMenuItem(
@@ -159,6 +161,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               color: AppColors.textWhite,
                               fontWeight: FontWeight.bold,
                             ),
+                          ),
+                          const SizedBox(height: 16),
+                          InactiveAccountBanner(
+                            isVisible:
+                                _user != null && !canUseProtectedFeatures(_user),
                           ),
                           const SizedBox(height: 24),
                           if (_user != null) ...[

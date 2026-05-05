@@ -68,7 +68,11 @@ class _StripeHostedSetupPageState extends State<StripeHostedSetupPage> {
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
+    _controller = WebViewController(
+      onPermissionRequest: (WebViewPermissionRequest request) {
+        request.grant();
+      },
+    )
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(AppColors.primaryDark)
       ..setNavigationDelegate(

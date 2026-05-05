@@ -170,7 +170,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         );
 
-        AppRoutes.replace(context, AppRoutes.home);
+        if (authResponse.nextStep == 'kyc_required') {
+          AppRoutes.replace(context, AppRoutes.kyc);
+        } else {
+          AppRoutes.replace(context, AppRoutes.home);
+        }
       }
     } catch (e) {
       if (mounted) {

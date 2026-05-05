@@ -6,11 +6,14 @@ import 'package:footsmart_pro/core/constants/app_colors.dart';
 import 'package:footsmart_pro/core/models/bet.dart';
 import 'package:footsmart_pro/core/models/match.dart';
 import 'package:footsmart_pro/core/models/wallet.dart';
+import 'package:footsmart_pro/core/models/user.dart';
 import 'package:footsmart_pro/core/routes/app_routes.dart';
 import 'package:footsmart_pro/core/services/api_service.dart';
 import 'package:footsmart_pro/core/services/bet_service.dart';
 import 'package:footsmart_pro/core/services/match_service.dart';
+import 'package:footsmart_pro/core/services/profile_service.dart';
 import 'package:footsmart_pro/core/services/wallet_service.dart';
+import 'package:footsmart_pro/core/utils/account_access_helper.dart';
 import 'package:footsmart_pro/core/extensions/theme_context.dart';
 import 'package:footsmart_pro/core/theme/app_spacing.dart';
 import 'package:footsmart_pro/shared/widgets/app_badge.dart';
@@ -18,6 +21,7 @@ import 'package:footsmart_pro/shared/widgets/app_button.dart';
 import 'package:footsmart_pro/shared/widgets/app_card.dart';
 import 'package:footsmart_pro/shared/widgets/app_skeleton.dart';
 import 'package:footsmart_pro/shared/widgets/app_text.dart';
+import 'package:footsmart_pro/shared/widgets/inactive_account_banner.dart';
 import 'package:footsmart_pro/widgets/bottom_nav_bar.dart';
 
 class BettingScreen extends StatefulWidget {
@@ -31,6 +35,7 @@ class _BettingScreenState extends State<BettingScreen> {
   late final MatchService _matchService;
   late final BetService _betService;
   late final WalletService _walletService;
+  late final ProfileService _profileService;
   final NumberFormat _money =
       NumberFormat.currency(symbol: '\$', decimalDigits: 2);
   final TextEditingController _stakeController =
@@ -42,6 +47,7 @@ class _BettingScreenState extends State<BettingScreen> {
   FootballMatch? _selectedMatch;
   MatchOdds? _selectedOdds;
   BetSelection _selectedSelection = BetSelection.home;
+  User? _user;
 
   bool _isMatchesLoading = true;
   bool _isOddsLoading = false;
@@ -62,9 +68,19 @@ class _BettingScreenState extends State<BettingScreen> {
     _matchService = MatchService(api);
     _betService = BetService(api);
     _walletService = WalletService(api);
+    _profileService = ProfileService(api);
     _startCountdownTicker();
     _loadMatches();
     _refreshWalletAndBets();
+    _loadUserStatus();
+  }
+
+  Future<void> _loadUserStatus() async {
+    try {
+      final user = await _profileService.getCurrentUserFromDatabase();
+      if (!mounted) return;
+      setState(() => _user = user);
+    } catch (_) {}
   }
 
   void _startCountdownTicker() {
@@ -317,6 +333,11 @@ class _BettingScreenState extends State<BettingScreen> {
   double get _potentialPayout => _stake * _selectedOddsValue;
 
   Future<void> _placeBet() async {
+    if (!canUseProtectedFeatures(_user)) {
+      await showKycRequiredDialog(context);
+      return;
+    }
+
     final match = _selectedMatch;
     final odds = _selectedOdds;
     if (match == null || odds == null) return;
@@ -515,6 +536,10 @@ class _BettingScreenState extends State<BettingScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),
                 children: [
+                  InactiveAccountBanner(
+                    isVisible: _user != null && !canUseProtectedFeatures(_user),
+                  ),
+                  const SizedBox(height: 12),
                   _HeroPanel(
                     matchesCount: _matches.length,
                     isLoading: _isMatchesLoading,

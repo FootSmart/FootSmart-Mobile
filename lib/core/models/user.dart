@@ -10,6 +10,9 @@ class User {
   final String? phoneNumber;
   final String kycStatus;
   final String accountStatus;
+  final String? kycProvider;
+  final String? kycVerifiedAt;
+  final String? kycRejectionReason;
   final double balance;
 
   static double _parseDouble(dynamic value) {
@@ -30,7 +33,10 @@ class User {
     this.dateOfBirth,
     this.phoneNumber,
     this.kycStatus = 'not_started',
-    this.accountStatus = 'active',
+    this.accountStatus = 'inactive',
+    this.kycProvider,
+    this.kycVerifiedAt,
+    this.kycRejectionReason,
     this.balance = 0.0,
   });
 
@@ -63,7 +69,11 @@ class User {
       dateOfBirth: json['dateOfBirth'] as String?,
       phoneNumber: json['phoneNumber'] as String?,
       kycStatus: json['kycStatus'] as String? ?? 'not_started',
-      accountStatus: json['accountStatus'] as String? ?? 'active',
+      accountStatus: json['accountStatus'] as String? ?? 'inactive',
+      kycProvider: json['kycProvider'] as String? ?? json['provider'] as String?,
+      kycVerifiedAt: json['kycVerifiedAt'] as String? ?? json['verifiedAt'] as String?,
+      kycRejectionReason: json['kycRejectionReason'] as String? ??
+          json['rejectionReason'] as String?,
       balance: _parseDouble(json['balance']),
     );
   }
@@ -81,6 +91,9 @@ class User {
       'phoneNumber': phoneNumber,
       'kycStatus': kycStatus,
       'accountStatus': accountStatus,
+      'kycProvider': kycProvider,
+      'kycVerifiedAt': kycVerifiedAt,
+      'kycRejectionReason': kycRejectionReason,
       'balance': balance,
     };
   }
@@ -142,16 +155,19 @@ class RegisterRequest {
 class AuthResponse {
   final String accessToken;
   final User user;
+  final String? nextStep;
 
   AuthResponse({
     required this.accessToken,
     required this.user,
+    this.nextStep,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
       accessToken: json['access_token'] as String,
       user: User.fromJson(json['user'] as Map<String, dynamic>),
+      nextStep: json['next_step'] as String?,
     );
   }
 
@@ -159,6 +175,7 @@ class AuthResponse {
     return {
       'access_token': accessToken,
       'user': user.toJson(),
+      'next_step': nextStep,
     };
   }
 }

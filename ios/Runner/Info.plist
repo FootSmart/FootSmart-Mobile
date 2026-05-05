@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>FootSmart needs camera access so you can take a selfie and capture photos of your government ID during identity verification.</string>
 </dict>
 </plist>

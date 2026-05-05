@@ -12,7 +12,8 @@ class ApiConstants {
   /// `flutter run --dart-define=API_BASE_URL=https://footsmart-backend-production.up.railway.app/api`
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://footsmart-backend-production.up.railway.app/api',
+    // defaultValue: 'https://footsmart-backend-production.up.railway.app/api',
+    defaultValue: 'http://192.168.1.113:3001/api'
   );
 
   // API Version
@@ -35,6 +36,11 @@ class ApiConstants {
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
   static const String verifyResetToken = '/auth/verify-reset-token';
+
+    // KYC
+    static const String kycStart = '/kyc/start';
+    static const String kycStatus = '/kyc/status';
+    static const String kycSkip = '/kyc/skip';
 
   // ─── Leagues ─────────────────────────────────────────────────────────────
   static const String leagues = '/leagues';
