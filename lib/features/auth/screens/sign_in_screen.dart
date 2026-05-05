@@ -32,8 +32,6 @@ class _SignInScreenState extends State<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  late final AuthService _authService;
-
   bool _isLoading = false;
   bool _rememberMe = true;
   late final AuthService _authService;
@@ -112,6 +110,11 @@ class _SignInScreenState extends State<SignInScreen> {
         rememberMe: _rememberMe,
       );
 
+      await _premiumService.hasPremiumAccess(
+        userId: authResponse.user.id,
+      );
+      debugPrint('RevenueCat configured for user: ${authResponse.user.id}');
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -171,46 +174,6 @@ class _SignInScreenState extends State<SignInScreen> {
     _goToAuthenticatedArea(user);
   }
 
-      await _premiumService.hasPremiumAccess(
-        userId: authResponse.user.id,
-      );
-      debugPrint('RevenueCat configured for user: ${authResponse.user.id}');
-
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Welcome back, ${authResponse.user.displayName}!'),
-            backgroundColor: context.accent,
-          ),
-        );
-
-        // Navigate based on role
-        if (authResponse.user.role == 'coach') {
-          AppRoutes.replace(context, AppRoutes.coachHome);
-        } else {
-          AppRoutes.replace(context, AppRoutes.home);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.toString().contains('401') ||
-                      e.toString().contains('Unauthorized')
-                  ? 'Invalid email or password'
-                  : 'Login failed. Please try again.',
-            ),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
   Future<void> _useAnotherAccount() async {
     await _authService.clearSavedSession(clearRememberMe: true);
     if (!mounted) return;

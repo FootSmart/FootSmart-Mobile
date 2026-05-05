@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:footsmart_pro/features/auth/screens/sign_in_screen.dart';
 import 'package:footsmart_pro/features/auth/screens/sign_up_screen.dart';
 import 'package:footsmart_pro/features/auth/screens/forgot_password_screen.dart';
+import 'package:footsmart_pro/features/auth/screens/reset_password_screen.dart';
 import 'package:footsmart_pro/features/betting/betting_screen.dart';
 import 'package:footsmart_pro/features/explore/explore_screen.dart';
 import 'package:footsmart_pro/features/explore/competition_hub_screen.dart';
@@ -55,6 +56,7 @@ class AppRoutes {
   static const String signIn = '/sign-in';
   static const String signUp = '/sign-up';
   static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
   static const String home = '/home';
   static const String explore = '/explore';
   static const String competitionHub = '/competition-hub';
@@ -110,6 +112,18 @@ class AppRoutes {
       GoRoute(
           path: forgotPassword,
           builder: (context, state) => const ForgotPasswordScreen()),
+      GoRoute(
+        path: resetPassword,
+        builder: (context, state) {
+          final extra = state.extra;
+          final token = extra is Map
+              ? (extra['token'] as String? ?? '')
+              : extra is String
+                  ? extra
+                  : state.uri.queryParameters['token'] ?? '';
+          return ResetPasswordScreen(token: token);
+        },
+      ),
       GoRoute(path: home, builder: (context, state) => const HomeScreen()),
       GoRoute(path: explore, builder: (context, state) => const ExploreScreen()),
       GoRoute(
@@ -241,6 +255,12 @@ class AppRoutes {
         onboarding: (context) => const OnboardingScreen(),
         signIn: (context) => const SignInScreen(),
         forgotPassword: (context) => const ForgotPasswordScreen(),
+        resetPassword: (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final token = args?['token'] as String? ?? '';
+          return ResetPasswordScreen(token: token);
+        },
         signUp: (context) => const SignUpScreen(),
         home: (context) => const HomeScreen(),
         explore: (context) => const ExploreScreen(),

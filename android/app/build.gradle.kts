@@ -16,6 +16,11 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+fun keystoreProperty(name: String): String? {
+    val value = keystoreProperties[name] as String?
+    return value?.takeIf { it.isNotBlank() }
+}
+
 android {
     namespace = "com.esprit.footsmart"
     compileSdk = flutter.compileSdkVersion
@@ -42,19 +47,25 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+        val keyAliasValue = keystoreProperty("keyAlias")
+        val keyPasswordValue = keystoreProperty("keyPassword")
+        val storeFileValue = keystoreProperty("storeFile")
+        val storePasswordValue = keystoreProperty("storePassword")
+
+        if (keyAliasValue != null && keyPasswordValue != null && storeFileValue != null && storePasswordValue != null) {
+            create("release") {
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+                storeFile = file(storeFileValue)
+                storePassword = storePasswordValue
+            }
         }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("release")
+            // Only set signing if release config exists (debug builds do not require it).
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 }

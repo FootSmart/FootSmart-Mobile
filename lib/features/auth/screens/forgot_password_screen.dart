@@ -66,28 +66,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final result =
+      final success =
           await _authService.forgotPassword(_emailController.text.trim());
 
       if (!mounted) return;
 
-      if (result['success'] == true) {
+      if (success) {
         setState(() {
           _emailSent = true;
         });
         _startCountdown();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Reset link sent to your email'),
+          const SnackBar(
+            content: Text(
+              'If an account exists with this email, a password reset link has been sent.',
+            ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 5),
+            duration: Duration(seconds: 5),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Failed to send reset email'),
+          const SnackBar(
+            content: Text('Unable to send reset link. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -96,8 +98,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
+        const SnackBar(
+          content: Text('Unable to send reset link. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -179,8 +181,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                             const SizedBox(height: 10),
                             Text(
-                              _emailSent
-                                  ? 'We sent a password reset link to your email. Please check your inbox.'
+                                _emailSent
+                                  ? 'If an account exists with this email, a password reset link has been sent.'
                                   : 'Enter your email address and we will send you a secure reset link.',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: context.textSecondary,

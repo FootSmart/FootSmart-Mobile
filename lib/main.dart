@@ -1,3 +1,6 @@
+import 'dart:async';
+
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +11,7 @@ import 'core/theme/theme_notifier.dart';
 import 'core/routes/app_routes.dart';
 import 'core/services/api_service.dart';
 import 'core/services/auth_service.dart';
+import 'core/services/deep_link_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,11 +44,30 @@ void main() async {
   );
 }
 
-class FootSmartProApp extends ConsumerWidget {
+class FootSmartProApp extends ConsumerStatefulWidget {
   const FootSmartProApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FootSmartProApp> createState() => _FootSmartProAppState();
+}
+
+class _FootSmartProAppState extends ConsumerState<FootSmartProApp> {
+  final DeepLinkService _deepLinkService = DeepLinkService();
+
+  @override
+  void initState() {
+    super.initState();
+    _deepLinkService.initialize();
+  }
+
+  @override
+  void dispose() {
+    _deepLinkService.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
     final isDark = themeMode == ThemeMode.dark;
 

@@ -39,44 +39,49 @@ class AuthService {
     return authResponse;
   }
 
-  Future<Map<String, dynamic>> forgotPassword(String email) async {
-    final response = await _apiService.post(
-      ApiConstants.forgotPassword,
-      data: {'email': email},
-    );
-
-    return {
-      'success': true,
-      'message':
-          response.data['message'] ?? 'Password reset email sent successfully',
-    };
+  Future<bool> forgotPassword(String email) async {
+    try {
+      await _apiService.post(
+        ApiConstants.forgotPassword,
+        data: {'email': email},
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  Future<Map<String, dynamic>> resetPassword(
-    String token,
-    String newPassword,
-  ) async {
-    final response = await _apiService.post(
-      ApiConstants.resetPassword,
-      data: {
-        'token': token,
-        'newPassword': newPassword,
-      },
-    );
-
-    return {
-      'success': true,
-      'message': response.data['message'] ?? 'Password reset successfully',
-    };
+  Future<bool> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await _apiService.post(
+        ApiConstants.resetPassword,
+        data: {
+          'token': token,
+          'newPassword': newPassword,
+        },
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  Future<Map<String, dynamic>> verifyResetToken(String token) async {
-    final response = await _apiService.post(
-      ApiConstants.verifyResetToken,
-      data: {'token': token},
-    );
-
-    return response.data;
+  Future<ResetTokenStatus> verifyResetToken(String token) async {
+    try {
+      final response = await _apiService.post(
+        ApiConstants.verifyResetToken,
+        data: {'token': token},
+      );
+      return ResetTokenStatus.fromJson(response.data);
+    } catch (_) {
+      return const ResetTokenStatus(
+        valid: false,
+        message: 'Invalid reset token',
+      );
+    }
   }
 
   Future<void> _saveAuthData(
@@ -198,5 +203,25 @@ class AuthService {
   Future<void> setRememberMe(bool rememberMe) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_rememberMeKey, rememberMe);
+  }
+}
+
+class ResetTokenStatus {
+  final bool valid;
+  final String message;
+  final String? email;
+
+  const ResetTokenStatus({
+    required this.valid,
+    required this.message,
+    this.email,
+  });
+
+  factory ResetTokenStatus.fromJson(Map<String, dynamic> json) {
+    return ResetTokenStatus(
+      valid: json['valid'] == true,
+      message: (json['message'] ?? 'Invalid reset token').toString(),
+      email: json['email']?.toString(),
+    );
   }
 }
