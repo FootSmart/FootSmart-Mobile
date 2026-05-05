@@ -75,6 +75,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           label: 'Payment Methods',
           route: '/app/payment-methods',
         ),
+        _ProfileMenuItem(
+          icon: Icons.workspace_premium_outlined,
+          label: 'Subscription',
+          route: AppRoutes.subscription,
+        ),
       ],
     ),
     _ProfileSection(

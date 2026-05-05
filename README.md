@@ -121,7 +121,7 @@ lib/
 ```bash
 # Clone the repo
 git clone https://github.com/YOUR_USERNAME/scfoot_smart.git
-cd scfoot_smart
+cd footsmart
 
 # Install dependencies
 flutter pub get

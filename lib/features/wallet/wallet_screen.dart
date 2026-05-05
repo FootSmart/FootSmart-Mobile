@@ -282,7 +282,7 @@ class _WalletScreenState extends State<WalletScreen> {
             variant: AppTextVariant.h2,
             fontWeight: FontWeight.w700,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -399,29 +399,54 @@ class _WalletScreenState extends State<WalletScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        label: 'Buy Points',
-                        icon: const Icon(Icons.add_rounded, size: 20),
-                        onPressed:
-                            _isLoadingBalance ? null : _showDepositDialog,
-                        fullWidth: true,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppButton(
-                        label: 'Withdraw',
-                        icon: const Icon(Icons.north_east_rounded, size: 20),
-                        variant: AppButtonVariant.secondary,
-                        onPressed:
-                            _isLoadingBalance ? null : _showWithdrawDialog,
-                        fullWidth: true,
-                      ),
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 330;
+
+                    if (isNarrow) {
+                      return Column(
+                        children: [
+                          AppButton(
+                            label: 'Buy Points',
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            onPressed: _isLoadingBalance ? null : _showDepositDialog,
+                            fullWidth: true,
+                          ),
+                          const SizedBox(height: 10),
+                          AppButton(
+                            label: 'Withdraw',
+                            icon: const Icon(Icons.north_east_rounded, size: 18),
+                            variant: AppButtonVariant.secondary,
+                            onPressed: _isLoadingBalance ? null : _showWithdrawDialog,
+                            fullWidth: true,
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            label: 'Buy Points',
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            onPressed: _isLoadingBalance ? null : _showDepositDialog,
+                            fullWidth: true,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: AppButton(
+                            label: 'Withdraw',
+                            icon: const Icon(Icons.north_east_rounded, size: 18),
+                            variant: AppButtonVariant.secondary,
+                            onPressed: _isLoadingBalance ? null : _showWithdrawDialog,
+                            fullWidth: true,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

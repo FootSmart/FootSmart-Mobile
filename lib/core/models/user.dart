@@ -14,12 +14,45 @@ class User {
   final String? kycVerifiedAt;
   final String? kycRejectionReason;
   final double balance;
+  final bool subscriptionActive;
+  final String? subscriptionPlan;
+  final DateTime? subscriptionEndsAt;
 
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
+  }
+
+  static bool _parseBool(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is num) {
+      return value != 0; // 1 = true, 0 = false
+    }
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == 'true' ||
+          normalized == '1' ||
+          normalized == 'yes';
+    }
+    return false;
+  }
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      if (value.trim().isEmpty) return null;
+
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   User({
@@ -38,6 +71,9 @@ class User {
     this.kycVerifiedAt,
     this.kycRejectionReason,
     this.balance = 0.0,
+    this.subscriptionActive = false,
+    this.subscriptionPlan,
+    this.subscriptionEndsAt,
   });
 
   /// Get user initials for avatar
@@ -57,6 +93,63 @@ class User {
     return parts.length > 1 ? parts.sublist(1).join(' ') : '';
   }
 
+  /// Helper for UI/paywall checks
+  bool get hasPremiumAccess {
+    if (!subscriptionActive) return false;
+
+    if (subscriptionEndsAt == null) return true;
+
+    return subscriptionEndsAt!.isAfter(DateTime.now());
+  }
+
+  /// Optional helper for display
+  bool get isSubscriptionExpired {
+    if (subscriptionEndsAt == null) return false;
+    return subscriptionEndsAt!.isBefore(DateTime.now());
+  }
+
+  User copyWith({
+    String? id,
+    String? email,
+    String? displayName,
+    String? role,
+    String? country,
+    String? club,
+    String? avatarUrl,
+    String? dateOfBirth,
+    String? phoneNumber,
+    String? kycStatus,
+    String? accountStatus,
+    double? balance,
+    bool? subscriptionActive,
+    String? subscriptionPlan,
+    DateTime? subscriptionEndsAt,
+    bool clearSubscriptionPlan = false,
+    bool clearSubscriptionEndsAt = false,
+  }) {
+    return User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      role: role ?? this.role,
+      country: country ?? this.country,
+      club: club ?? this.club,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      kycStatus: kycStatus ?? this.kycStatus,
+      accountStatus: accountStatus ?? this.accountStatus,
+      balance: balance ?? this.balance,
+      subscriptionActive: subscriptionActive ?? this.subscriptionActive,
+      subscriptionPlan: clearSubscriptionPlan
+          ? null
+          : (subscriptionPlan ?? this.subscriptionPlan),
+      subscriptionEndsAt: clearSubscriptionEndsAt
+          ? null
+          : (subscriptionEndsAt ?? this.subscriptionEndsAt),
+    );
+  }
+  
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as String,
@@ -75,6 +168,14 @@ class User {
       kycRejectionReason: json['kycRejectionReason'] as String? ??
           json['rejectionReason'] as String?,
       balance: _parseDouble(json['balance']),
+      // NEW: accept both camelCase and snake_case
+      subscriptionActive: _parseBool(
+        json['subscriptionActive'] ?? json['subscription_active'],
+      ),
+      subscriptionPlan: (json['subscriptionPlan'] ?? json['subscription_plan']) as String?,
+      subscriptionEndsAt: _parseDateTime(
+        json['subscriptionEndsAt'] ?? json['subscription_ends_at'],
+      ),
     );
   }
 
@@ -95,6 +196,10 @@ class User {
       'kycVerifiedAt': kycVerifiedAt,
       'kycRejectionReason': kycRejectionReason,
       'balance': balance,
+      // new subscription
+      'subscriptionActive': subscriptionActive,
+      'subscriptionPlan': subscriptionPlan,
+      'subscriptionEndsAt': subscriptionEndsAt?.toIso8601String(),
     };
   }
 }
