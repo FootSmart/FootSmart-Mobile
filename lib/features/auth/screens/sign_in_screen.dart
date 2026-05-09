@@ -126,14 +126,15 @@ class _SignInScreenState extends State<SignInScreen> {
             backgroundColor: context.accent,
           ),
         );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Welcome back, ${authResponse.user.displayName}!'),
-          backgroundColor: context.accent,
-        ),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back, ${authResponse.user.displayName}!'),
+            backgroundColor: context.accent,
+          ),
+        );
 
-      _goToAuthenticatedArea(authResponse.user);
+        _goToAuthenticatedArea(authResponse.user);
+      }
     } catch (e) {
       if (!mounted) return;
 

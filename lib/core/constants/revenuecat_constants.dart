@@ -1,6 +1,6 @@
 class RevenueCatConstants {
-  static const androidApiKey = 'goog_LrtoqeRHtHhjapbtVdnLUpVCbWx';
+  static const androidApiKey = 'goog_aPvCXHRQZNBblgQSzVMLWkYxtFx';
 
-  static const entitlementPro = 'Foot Smart Pro';
+  static const entitlementPro = 'pro';
   static const offeringDefault = 'default';
 }
